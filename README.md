@@ -13,7 +13,7 @@
 | ---------- | --------------------------------------------------- |
 | 프로젝트명 | Blind Chicken Market                                |
 | 주제       | 익명 기반 중고 거래 및 경매 웹사이트                |
-| 개발 기간  | 2025.11 ~ 2025.12                                   |
+| 개발 기간  | 2025.10.31 ~ 2025.12.2                              |
 | 목표       | 프론트엔드 + 백엔드 통합 전자상거래 프로토타입 완성 |
 | 팀명       | Darius Team                                         |
 | 배포 주소  | (추후 추가)                                         |
@@ -50,52 +50,6 @@
 | Backend             | Spring Boot, STOMP (WebSocket), JPA (Java Persistence API) |
 | DB                  | PostgreSQL                                                 |
 | Server / Deployment | GitHub Actions, Jenkins, AWS EC2, AWS EKS                  |
-
----
-
-## 📁 폴더 구조
-
-```
-blind-chicken-market/
-├─ app/
-│  ├─ (routes)/
-│  │  ├─ products/
-│  │  │  ├─ page.tsx
-│  │  │  ├─ [id]/page.tsx
-│  │  ├─ auction/
-│  │  ├─ auth/
-│  │  └─ profile/
-│  ├─ layout.tsx
-│  └─ page.tsx
-├─ components/
-│  ├─ ui/
-│  ├─ product/
-│  ├─ auction/
-│  └─ common/
-├─ lib/
-│  ├─ prisma.ts
-│  ├─ auth.ts
-│  └─ utils.ts
-├─ prisma/
-│  └─ schema.prisma
-├─ public/
-│  └─ images/
-├─ styles/
-│  └─ globals.css
-└─ package.json
-```
-
----
-
-## 🧮 ERD (예시)
-
-```
-User (id, name, email, password, createdAt)
-Product (id, title, description, price, image, userId, status)
-Bid (id, productId, userId, bidAmount, createdAt)
-Order (id, productId, buyerId, sellerId, totalPrice, status)
-Review (id, productId, userId, rating, comment)
-```
 
 ---
 
@@ -146,12 +100,12 @@ npm run dev
 
 ## 🧑‍💻 팀 정보
 
-| 이름   | 역할            | 담당                    |
-| ------ | --------------- | ----------------------- |
-| 남경진 | PM / Frontend   | 프론트 설계             |
-| 이유진 | Backend         | 백엔드 담당 개발        |
-| 정성훈 | Backend         | 서버 구축 및 CI/CD 연결 |
-| 최태웅 | Frontend / Docs |                         |
+| 이름   | 역할          | 담당                                                         |
+| ------ | ------------- | ------------------------------------------------------------ |
+| 남경진 | PM / Frontend | 프론트엔드 구조 설계, 주요 컴포넌트 구현, 상태 관리,문서정리 |
+| 이유진 | Backend       | 실시간 경매 로직(WebSocket), 결제 프로세스, 서버 로직        |
+| 정성훈 | Backend       | 인프라·CI/CD·보안(JWT/OAuth), 배포 자동화                    |
+| 최태웅 | Frontend      | UI 컴포넌트 구현, 반응형 UX, 코드 품질 및 테스트             |
 
 ---
 

@@ -1,4 +1,0 @@
-// 상품 등록 페이지
-export default function NewProductPage() {
-  return <div>New Product Page</div>;
-}

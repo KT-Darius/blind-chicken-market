@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 import ProductCard from "@/components/product-card";
 import { Button } from "@/components/ui/button";
 import products from "@/mocks/products.json";
 
 export default function Home() {
-  const [selectedCategory, setSelectedCategory] = useState("all");
   const productList = products;
 
   return (
@@ -22,16 +21,10 @@ export default function Home() {
               The Last Bidder Wins. This is Blind Chicken Market. <br />
               가장 늦게, 가장 용감하게. 블라인드 치킨 마켓에서 승리하세요.
             </p>
+
             <div className="flex gap-3 pt-4">
               <Button size="lg" className="rounded-lg">
-                Start Bidding
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="rounded-lg bg-transparent"
-              >
-                Learn More
+                <Link href="/products/create">상품 등록</Link>
               </Button>
             </div>
           </div>
