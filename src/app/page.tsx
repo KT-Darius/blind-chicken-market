@@ -26,6 +26,13 @@ export default function Home() {
               <Button size="lg" className="rounded-lg">
                 <Link href="/products/create">상품 등록</Link>
               </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="rounded-lg bg-transparent"
+              >
+                <Link href="/mypage">마이페이지</Link>
+              </Button>
             </div>
           </div>
         </div>

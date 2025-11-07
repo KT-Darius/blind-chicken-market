@@ -79,18 +79,14 @@
 
 ```bash
 # 1. 저장소 클론
-git clone https://github.com/{username}/blind-chicken-market.git
+git clone https://github.com/KT-Darius/blind-chicken-market.git
 
 # 2. 패키지 설치
 npm install
 
 # 3. 환경 변수 설정 (.env)
-DATABASE_URL="your_database_url"
-NEXTAUTH_SECRET="your_secret"
+DATABASE_URL="미정"
 NEXTAUTH_URL="http://localhost:3000"
-
-# 4. 데이터베이스 마이그레이션
-npx prisma migrate dev
 
 # 5. 개발 서버 실행
 npm run dev
@@ -115,10 +111,12 @@ npm run dev
 
 ---
 
-## Tailwind CSS 설치 및 클래스
+## 🔖 참고 자료
+
+- Tailwind CSS 설치 및 클래스
 
 https://tailwindcss.com/docs/installation/using-vite
 
-## Shadcn/ui
+- Shadcn/ui
 
 https://ui.shadcn.com/docs/installation/next
