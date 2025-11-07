@@ -56,12 +56,38 @@ export default function Navigation() {
           </Button>
         </form>
 
+        {/* 메뉴 링크 */}
+        <div className="hidden items-center gap-6 md:flex">
+          <Link
+            href="/products/create"
+            className={`text-sm font-medium whitespace-nowrap transition-colors ${
+              isActive("/products/create")
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            상품 등록
+          </Link>
+          {isLoggedIn && (
+            <Link
+              href="/mypage"
+              className={`text-sm font-medium whitespace-nowrap transition-colors ${
+                isActive("/mypage")
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              마이페이지
+            </Link>
+          )}
+        </div>
+
         {/* 로그인/회원가입 */}
         <div className="flex shrink-0 items-center gap-3">
           {isLoggedIn ? (
             <div className="flex items-center gap-3">
               <Link
-                href="/profile"
+                href="/mypage"
                 className="hover:bg-muted text-foreground rounded-lg p-2 transition-colors"
                 title="마이페이지"
               >

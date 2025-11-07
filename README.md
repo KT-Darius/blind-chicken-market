@@ -85,8 +85,9 @@ git clone https://github.com/KT-Darius/blind-chicken-market.git
 npm install
 
 # 3. 환경 변수 설정 (.env)
-DATABASE_URL="미정"
-NEXTAUTH_URL="http://localhost:3000"
+# 지금은 미완성이라 설정 x
+DATABASE_URL=미정
+NEXTAUTH_URL=http://localhost:3000
 
 # 5. 개발 서버 실행
 npm run dev
@@ -114,9 +115,7 @@ npm run dev
 ## 🔖 참고 자료
 
 - Tailwind CSS 설치 및 클래스
-
-https://tailwindcss.com/docs/installation/using-vite
+  https://tailwindcss.com/docs/installation/using-vite
 
 - Shadcn/ui
-
-https://ui.shadcn.com/docs/installation/next
+  https://ui.shadcn.com/docs/installation/next

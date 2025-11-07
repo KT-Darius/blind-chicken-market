@@ -23,12 +23,13 @@ export default function Home() {
             </p>
 
             <div className="flex gap-3 pt-4">
-              <Button size="lg" className="rounded-lg">
+              <Button size="lg" asChild className="rounded-lg">
                 <Link href="/products/create">상품 등록</Link>
               </Button>
               <Button
                 size="lg"
                 variant="outline"
+                asChild
                 className="rounded-lg bg-transparent"
               >
                 <Link href="/mypage">마이페이지</Link>
