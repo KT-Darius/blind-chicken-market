@@ -86,8 +86,9 @@ npm install
 
 # 3. 환경 변수 설정 (.env)
 # 지금은 미완성이라 설정 x
+
+NEXT_PUBLIC_API_URL=http://localhost:3000
 DATABASE_URL=미정
-NEXTAUTH_URL=http://localhost:3000
 
 # 5. 개발 서버 실행
 npm run dev
@@ -106,9 +107,22 @@ npm run dev
 
 ---
 
-## 📜 라이선스
+## 📜 GitHub 커밋
 
-본 프로젝트는 교육용으로 제작되었으며, 상업적 이용을 금합니다.
+| prefix | 의미 |
+| feat: | 새로운 기능 추가 |
+| fix: | 버그 수정 |
+| refactor: | 코드 구조 개선 (기능 변화 없음) |
+| style: | 포맷팅, CSS, 세미콜론 등 스타일 변경 |
+| chore: | 빌드, 설정, 의존성 등 기타 변경 |
+
+---
+
+## 🧹 Code Style
+
+- 코드 포맷: **Prettier**
+- 코드 규칙 검사: **ESLint**
+- 저장 시 자동 정리 기능 활성화 (VSCode 권장)
 
 ---
 

@@ -1,7 +1,5 @@
 "use client";
 
-import type React from "react";
-
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -21,9 +19,28 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "include", // 쿠키 기반 인증 시 필요
+      });
+
+      if (!res.ok) {
+        throw new Error("로그인 실패");
+      }
+
+      // JWT를 JSON으로 받는 경우 (ex: { accessToken: "...", refreshToken: "..." })
+      const data = await res.json();
+
+      // accessToken을 localStorage에 저장 (HttpOnly 쿠키 사용 시 생략)
+      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem("refreshToken", data.refreshToken);
+
+      // 로그인 성공 후 홈으로 이동
       router.push("/");
     } catch (err) {
+      console.error(err);
       setError("이메일 또는 비밀번호가 올바르지 않습니다.");
     } finally {
       setIsLoading(false);
