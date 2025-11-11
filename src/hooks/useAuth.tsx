@@ -3,8 +3,16 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { User, AuthContextType } from "@/types";
+import axios from "axios"; // axios import
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+if (typeof window !== "undefined") {
+  const token = localStorage.getItem("accessToken");
+  if (token) {
+    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -27,6 +35,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData);
     localStorage.setItem("accessToken", token);
     localStorage.setItem("user", JSON.stringify(userData));
+
+    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
   };
 
   const logout = () => {
@@ -34,6 +44,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     localStorage.removeItem("accessToken");
     localStorage.removeItem("user");
+
+    delete axios.defaults.headers.common["Authorization"];
+
     router.push("/login");
   };
 
