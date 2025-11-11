@@ -87,7 +87,7 @@ npm install
 # 3. 환경 변수 설정 (.env)
 # 지금은 미완성이라 설정 x
 
-NEXT_PUBLIC_API_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:8080
 DATABASE_URL=미정
 
 # 5. 개발 서버 실행

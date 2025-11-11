@@ -56,12 +56,12 @@ export function SignupForm() {
       />
       <FormInput
         label="전화번호"
-        name="phone"
+        name="phoneNumber"
         type="tel"
         placeholder="01012345678"
-        value={formData.phone}
+        value={formData.phoneNumber}
         onChange={handleChange}
-        error={errors.phone}
+        error={errors.phoneNumber}
       />
       <TermsCheckbox
         checked={termsAccepted}

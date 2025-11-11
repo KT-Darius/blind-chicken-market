@@ -52,14 +52,16 @@ export default function Login() {
       <div className="w-full max-w-md space-y-8">
         {/* Header */}
         <div className="space-y-2 text-center">
-          <h1 className="text-foreground mt-6 text-3xl font-bold">로그인</h1>
-          <p className="text-muted-foreground">경매 플랫폼에 돌아오셨습니다</p>
+          <h1 className="text-foreground text-3xl font-bold">로그인</h1>
+          <p className="text-muted-foreground text-sm">
+            블라인드 치킨 마켓에 돌아오셨습니다
+          </p>
         </div>
 
         {/* Error Message */}
         {error && (
           <div className="bg-destructive/10 border-destructive/30 flex items-start gap-3 rounded-lg border p-4">
-            <AlertCircle className="text-destructive mt-0.5 h-5 w-5 flex-shrink-0" />
+            <AlertCircle className="text-destructive mt-0.5 h-5 w-5 shrink-0" />
             <p className="text-destructive text-sm">{error}</p>
           </div>
         )}

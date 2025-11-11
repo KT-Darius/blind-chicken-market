@@ -110,12 +110,12 @@ export default function ProductDetail({
           <ProductDescription description={product.description!} />
           <BidHistory history={product.bidHistory!} />
         </div>
-
+        <br />
         <Link
           href="/"
           className="text-muted-foreground hover:text-foreground mb-8 inline-flex items-center gap-2 text-sm transition-colors"
         >
-          ← 경매로 돌아가기
+          ← 홈으로 돌아가기
         </Link>
       </div>
     </main>

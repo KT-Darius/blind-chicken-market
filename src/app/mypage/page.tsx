@@ -61,14 +61,6 @@ export default function MyPage() {
   return (
     <main className="bg-background min-h-screen py-8 md:py-12">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        {/* Back Link */}
-        <Link
-          href="/"
-          className="text-muted-foreground hover:text-foreground mb-8 inline-flex items-center gap-2 text-sm transition-colors"
-        >
-          ← 경매로 돌아가기
-        </Link>
-
         {/* Profile Header */}
         <div className="border-border mb-8 border-b pb-8">
           <div className="mb-8 flex items-start justify-between gap-4">
@@ -76,7 +68,9 @@ export default function MyPage() {
               <h1 className="text-foreground text-3xl font-bold md:text-4xl">
                 {mockUser.username}
               </h1>
-              <p className="text-muted-foreground mt-2">{mockUser.joinDate}</p>
+              <p className="text-muted-foreground mt-2 text-sm">
+                {mockUser.joinDate}
+              </p>
             </div>
             <div className="flex gap-2">
               <Button
@@ -223,6 +217,15 @@ export default function MyPage() {
             </Button>
           </div>
         )}
+
+        <br />
+        {/* Back Link */}
+        <Link
+          href="/"
+          className="text-muted-foreground hover:text-foreground mb-8 inline-flex items-center gap-2 text-sm transition-colors"
+        >
+          ← 홈으로 돌아가기
+        </Link>
       </div>
     </main>
   );

@@ -41,13 +41,13 @@ export default function CreateProductPage() {
   };
 
   return (
-    <main className="bg-background min-h-screen py-12">
+    <main className="bg-background min-h-screen py-8 md:py-12">
       <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-12">
-          <h1 className="text-foreground mb-2 text-4xl font-bold md:text-5xl">
+        <div className="mb-8">
+          <h1 className="text-foreground mb-2 text-3xl font-bold md:text-4xl">
             상품 등록
           </h1>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-muted-foreground text-sm md:text-base">
             블라인드 치킨 마켓에 상품을 등록하세요
           </p>
         </div>
