@@ -1,7 +1,33 @@
+"use client";
+
+import { useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 import { SignupForm } from "@/components/forms/SignupForm";
+import { Loader2 } from "lucide-react";
 
 export default function SignupPage() {
+  const router = useRouter();
+  const { user } = useAuth();
+
+  // 로그인 상태면 메인 페이지로 리디렉션
+  useEffect(() => {
+    if (user) {
+      router.push("/");
+    }
+  }, [user, router]);
+
+  // 리디렉션 중이거나 user 상태 확인 중일 때 로딩 표시
+  if (user) {
+    return (
+      <main className="bg-background flex min-h-screen items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin" />
+      </main>
+    );
+  }
+
+  // user가 null일 때만 (로그아웃 상태) 회원가입 폼 표시
   return (
     <main className="bg-background flex min-h-screen items-center justify-center px-4 py-12">
       <div className="w-full max-w-md space-y-8">

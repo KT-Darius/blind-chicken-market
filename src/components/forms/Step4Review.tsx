@@ -1,12 +1,12 @@
+import { ProductFormData } from "@/types";
+import {
+  PRODUCT_CATEGORIES,
+  PRODUCT_CONDITIONS,
+  AUCTION_DURATIONS,
+} from "@/lib/constants";
+
 interface Step4ReviewProps {
-  formData: {
-    title: string;
-    category: string;
-    condition: string;
-    description: string;
-    startingPrice: string;
-    duration: string;
-  };
+  formData: ProductFormData;
   uploadedImages: string[];
 }
 
@@ -14,12 +14,16 @@ export default function Step4Review({
   formData,
   uploadedImages,
 }: Step4ReviewProps) {
-  const durations = [
-    { label: "3일", value: "3" },
-    { label: "7일", value: "7" },
-    { label: "14일", value: "14" },
-    { label: "30일", value: "30" },
-  ];
+  // value(ENUM)를 label(한글)로 변환하는 로직
+  const categoryLabel =
+    PRODUCT_CATEGORIES.find((c) => c.value === formData.category)?.label ||
+    formData.category;
+  const conditionLabel =
+    PRODUCT_CONDITIONS.find((c) => c.value === formData.condition)?.label ||
+    formData.condition;
+  const durationLabel = AUCTION_DURATIONS.find(
+    (d) => d.value === formData.duration,
+  )?.label;
 
   return (
     <div className="space-y-6">
@@ -61,13 +65,13 @@ export default function Step4Review({
             <div>
               <p className="text-muted-foreground text-xs">카테고리</p>
               <p className="text-foreground font-semibold capitalize">
-                {formData.category}
+                {categoryLabel}
               </p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">상태</p>
               <p className="text-foreground font-semibold capitalize">
-                {formData.condition}
+                {conditionLabel}
               </p>
             </div>
           </div>
@@ -83,14 +87,15 @@ export default function Step4Review({
             <div>
               <p className="text-muted-foreground text-xs">시작 가격</p>
               <p className="text-foreground font-semibold">
-                ₩{formData.startingPrice || "0"}
+                {`₩${Number.parseInt(
+                  formData.startingPrice || "0",
+                  10,
+                ).toLocaleString()}`}
               </p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">경매 기간</p>
-              <p className="text-foreground font-semibold">
-                {durations.find((d) => d.value === formData.duration)?.label}
-              </p>
+              <p className="text-foreground font-semibold">{durationLabel}</p>
             </div>
           </div>
         </div>
