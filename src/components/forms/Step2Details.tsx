@@ -14,21 +14,26 @@ interface Step2DetailsProps {
   ) => void;
 }
 
+const categories = [
+  { label: "전자기기", value: "ELECTRONICS" },
+  { label: "패션", value: "FASHION" },
+  { label: "수집품", value: "GOODS" },
+  { label: "도서", value: "BOOKS" },
+  { label: "홈/가든", value: "HOME" },
+  { label: "스포츠", value: "SPORTS" },
+  { label: "기타", value: "ETC" },
+];
+
+const conditions = [
+  { label: "좋음", value: "GOOD" },
+  { label: "보통", value: "AVERAGE" },
+  { label: "나쁨", value: "BAD" },
+];
+
 export default function Step2Details({
   formData,
   onChange,
 }: Step2DetailsProps) {
-  const categories = [
-    "전자기기",
-    "패션",
-    "수집품",
-    "도서",
-    "홈/가든",
-    "스포츠",
-    "기타",
-  ];
-  const conditions = ["거의 새것", "좋음", "보통", "나쁨"];
-
   return (
     <div className="space-y-6">
       <div>
@@ -64,8 +69,8 @@ export default function Step2Details({
               className="border-border bg-background text-foreground focus:ring-primary w-full rounded-md border px-3 py-2 focus:ring-2 focus:outline-none"
             >
               {categories.map((cat) => (
-                <option key={cat} value={cat.toLowerCase()}>
-                  {cat}
+                <option key={cat.value} value={cat.value}>
+                  {cat.label}
                 </option>
               ))}
             </select>
@@ -81,8 +86,8 @@ export default function Step2Details({
               className="border-border bg-background text-foreground focus:ring-primary w-full rounded-md border px-3 py-2 focus:ring-2 focus:outline-none"
             >
               {conditions.map((cond) => (
-                <option key={cond} value={cond.toLowerCase()}>
-                  {cond}
+                <option key={cond.value} value={cond.value}>
+                  {cond.label}
                 </option>
               ))}
             </select>
