@@ -25,7 +25,6 @@ export default function Home() {
             </p>
 
             <div className="flex gap-3 pt-4">
-              {/* 8. user 객체가 있을 때 (로그인했을 때)만 버튼을 렌더링합니다. */}
               {user && (
                 <Button size="lg" asChild className="rounded-lg">
                   <Link href="/products/create">상품 등록</Link>

@@ -1,12 +1,12 @@
 "use client";
 
 import { Upload } from "lucide-react";
-import Image from "next/image";
+import { useEffect } from "react";
 
-interface Step1Props {
-  uploadedImages: string[]; // 미리보기용
+interface Step1UploadPhotosProps {
+  uploadedImages: string[];
   setUploadedImages: React.Dispatch<React.SetStateAction<string[]>>;
-  imageFiles: File[]; // 업로드용
+  imageFiles: File[];
   setImageFiles: React.Dispatch<React.SetStateAction<File[]>>;
 }
 
@@ -15,7 +15,7 @@ export default function Step1UploadPhotos({
   setUploadedImages,
   imageFiles,
   setImageFiles,
-}: Step1Props) {
+}: Step1UploadPhotosProps) {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const totalFiles = imageFiles.length + files.length;
@@ -26,29 +26,34 @@ export default function Step1UploadPhotos({
     }
 
     files.forEach((file) => {
-      // 업로드용 File 객체 저장 (부모 상태 업데이트)
+      // 업로드용 File 객체 저장
       setImageFiles((prevFiles) => [...prevFiles, file]);
 
-      // 미리보기용 base64 문자열 생성 (부모 상태 업데이트)
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (reader.result) {
-          setUploadedImages((prevImages) => [
-            ...prevImages,
-            reader.result as string,
-          ]);
-        }
-      };
-      reader.readAsDataURL(file); // base64로 변환
+      // FileReader 대신 URL.createObjectURL 사용
+      const blobUrl = URL.createObjectURL(file);
+      setUploadedImages((prevImages) => [...prevImages, blobUrl]);
     });
   };
 
   // removeImage 로직
   const removeImage = (indexToRemove: number) => {
+    // 제거할 blob URL을 찾아서 메모리에서 해제(revoke)
+    const urlToRemove = uploadedImages[indexToRemove];
+    if (urlToRemove) {
+      URL.revokeObjectURL(urlToRemove);
+    }
+
     // 두 상태에서 모두 제거
     setUploadedImages((prev) => prev.filter((_, i) => i !== indexToRemove));
     setImageFiles((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
+
+  // 컴포넌트가 언마운트될 때 blob URL들을 모두 해제 (메모리 누수 방지)
+  useEffect(() => {
+    return () => {
+      uploadedImages.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [uploadedImages]); // uploadedImages 배열 자체가 바뀔 때(예: 페이지 이동)
 
   const remainingUploads = 5 - imageFiles.length;
 
@@ -76,21 +81,21 @@ export default function Step1UploadPhotos({
               accept="image/*"
               onChange={handleImageUpload}
               className="hidden"
-              disabled={imageFiles.length >= 5} // file 개수로 확인
+              disabled={imageFiles.length >= 5}
             />
           </label>
         )}
 
-        {/* Uploaded Images (미리보기는 uploadedImages(base64) 사용) */}
+        {/* Uploaded Images */}
         {uploadedImages.map((img, idx) => (
           <div key={idx} className="group relative">
-            <Image
+            <img
               src={img || "/placeholder.svg"}
               alt={`Upload ${idx + 1}`}
               className="h-32 w-full rounded-lg object-cover"
             />
             <button
-              onClick={() => removeImage(idx)} // 수정된 removeImage 함수
+              onClick={() => removeImage(idx)}
               className="bg-destructive text-primary-foreground absolute top-2 right-2 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
             >
               ✕

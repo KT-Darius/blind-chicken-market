@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -12,11 +12,18 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export default function Login() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { user, login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // 로그인 상태에서 이 페이지 접근 시 리디렉션
+  useEffect(() => {
+    if (user) {
+      router.push("/");
+    }
+  }, [user, router]); // user 상태가 변경될 때마다 체크
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,35 +31,25 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      // --- [1단계] 로그인 API 호출 (토큰 받기) ---
       const loginResponse = await axios.post(
         `${API_BASE_URL}/api/auth/sign-in`,
         { email, password },
       );
-
-      const { accessToken } = loginResponse.data; // SignInResponseDto
+      const { accessToken } = loginResponse.data;
       if (!accessToken) {
         throw new Error("로그인 응답에 accessToken이 없습니다.");
       }
-
-      // --- [2단계] 유저 정보 API 호출 (토큰 사용) ---
       const userResponse = await axios.get(`${API_BASE_URL}/api/users/me`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       });
-
-      const userData = userResponse.data; // UserResponseDto
-
-      // --- [3단계] useAuth 훅으로 전역 상태 및 localStorage 저장 ---
-      // (이 함수가 axios 기본 헤더 설정까지 모두 처리합니다)
+      const userData = userResponse.data;
       login(accessToken, userData);
 
-      // 로그인 성공 후 홈으로 이동
       router.push("/");
     } catch (err) {
       console.error(err);
-      // 401(비번틀림), 404(유저없음) 등 명확한 에러 처리
       if (
         axios.isAxiosError(err) &&
         (err.response?.status === 401 || err.response?.status === 404)
@@ -66,6 +63,16 @@ export default function Login() {
     }
   };
 
+  // user가 있거나(로그인됨) 로딩 중일 때 폼 숨기기
+  if (user || isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="text-primary h-10 w-10 animate-spin" />
+      </div>
+    );
+  }
+
+  // user가 null일 때 (로그아웃 상태)만 폼을 렌더링
   return (
     <main className="bg-background flex min-h-screen items-center justify-center px-4 py-12">
       <div className="w-full max-w-md space-y-8">
@@ -93,7 +100,7 @@ export default function Login() {
             </label>
             <input
               type="email"
-              name="email" // name 속성 추가 (일관성)
+              name="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@example.com"
@@ -109,7 +116,7 @@ export default function Login() {
             </label>
             <input
               type="password"
-              name="password" // name 속성 추가
+              name="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"

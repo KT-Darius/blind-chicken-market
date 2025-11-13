@@ -12,7 +12,7 @@ export default function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
   const isActive = (path: string) => pathname === path;
 
   const handleSearch = (e: React.FormEvent) => {
@@ -34,7 +34,7 @@ export default function Navigation() {
           ㅂㅊㅁ
         </Link>
 
-        {/* 검색바*/}
+        {/* 검색바 */}
         <form
           onSubmit={handleSearch}
           className="hidden max-w-md flex-1 items-center gap-2 md:flex"
@@ -54,8 +54,12 @@ export default function Navigation() {
           </Button>
         </form>
 
+        {/* 로그인/회원가입 영역 */}
         <div className="flex shrink-0 items-center gap-3">
-          {user ? (
+          {/* isLoading: true이면 아무것도 렌더링하지 않음 (깜빡임 방지) */}
+          {isLoading ? (
+            <div className="bg-muted h-9 w-24 animate-pulse rounded-lg" /> // 스켈레톤 UI
+          ) : user ? (
             // --- 로그인 된 상태 ---
             <>
               <span className="text-foreground hidden text-sm font-medium sm:block">
@@ -74,7 +78,7 @@ export default function Navigation() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={logout} // 6. useAuth의 logout 함수를 직접 연결
+                onClick={logout}
                 className="rounded-lg"
               >
                 로그아웃

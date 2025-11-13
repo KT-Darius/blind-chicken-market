@@ -23,8 +23,8 @@ export default function ProductCard({ product }: { product: Product }) {
         {/* Image Container */}
         <div className="bg-muted border-border relative mb-4 flex aspect-square items-center justify-center overflow-hidden rounded-lg border">
           <img
-            src={product.image || "/placeholder.svg"}
-            alt={product.title}
+            src={product.image_url || "/placeholder.svg"}
+            alt={product.name}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         </div>
@@ -32,7 +32,7 @@ export default function ProductCard({ product }: { product: Product }) {
         {/* Info */}
         <div className="flex flex-1 flex-col space-y-3">
           <h3 className="text-foreground line-clamp-2 font-semibold text-balance transition-opacity group-hover:opacity-75">
-            {product.title}
+            {product.name}
           </h3>
 
           <div className="space-y-1">

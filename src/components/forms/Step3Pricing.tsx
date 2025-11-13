@@ -1,37 +1,16 @@
 import { Input } from "@/components/ui/input";
+import { ProductFormData } from "@/types";
+import { AUCTION_DURATIONS } from "@/lib/constants";
 
 interface Step3PricingProps {
-  formData: {
-    title: string;
-    category: string;
-    condition: string;
-    description: string;
-    startingPrice: string;
-    duration: string;
-  };
-  setFormData: React.Dispatch<
-    React.SetStateAction<{
-      title: string;
-      category: string;
-      condition: string;
-      description: string;
-      startingPrice: string;
-      duration: string;
-    }>
-  >;
+  formData: ProductFormData;
+  setFormData: React.Dispatch<React.SetStateAction<ProductFormData>>;
 }
 
 export default function Step3Pricing({
   formData,
   setFormData,
 }: Step3PricingProps) {
-  const durations = [
-    { label: "3일", value: "3" },
-    { label: "7일", value: "7" },
-    { label: "14일", value: "14" },
-    { label: "30일", value: "30" },
-  ];
-
   return (
     <div className="space-y-6">
       <div>
@@ -67,9 +46,6 @@ export default function Step3Pricing({
               min="0"
             />
           </div>
-          <p className="text-muted-foreground mt-2 text-xs">
-            유사 상품 기준 50,000원 ~ 200,000원을 권장합니다
-          </p>
         </div>
 
         {/* Duration */}
@@ -78,7 +54,7 @@ export default function Step3Pricing({
             경매 기간
           </label>
           <div className="grid grid-cols-2 gap-3">
-            {durations.map((dur) => (
+            {AUCTION_DURATIONS.map((dur) => (
               <button
                 key={dur.value}
                 onClick={() =>

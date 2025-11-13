@@ -1,8 +1,8 @@
 [
   {
     "id": 1,
-    "title": "아이폰17 프로 맥스 256GB (미개봉)",
-    "image": "/product01.jpeg",
+    "name": "아이폰17 프로 맥스 256GB (미개봉)",
+    "image_url": "/product01.jpeg",
     "currentBid": 1970000,
     "bids": 15,
     "timeLeft": "2h 34m",
@@ -14,8 +14,8 @@
   },
   {
     "id": 2,
-    "title": "apple airpods pro3 (미개봉)",
-    "image": "/product02.jpg",
+    "name": "apple airpods pro3 (미개봉)",
+    "image_url": "/product02.jpg",
     "currentBid": 330000,
     "bids": 12,
     "timeLeft": "12h 45m",
@@ -27,8 +27,8 @@
   },
   {
     "id": 3,
-    "title": "IAB STUDIO 24' Light Gray Hoodie (GRAY)",
-    "image": "/product03.jpg",
+    "name": "IAB STUDIO 24' Light Gray Hoodie (GRAY)",
+    "image_url": "/product03.jpg",
     "currentBid": 140000,
     "bids": 2,
     "timeLeft": "12h 45m",
@@ -40,8 +40,8 @@
   },
   {
     "id": 4,
-    "title": "닌텐도 스위치2 OLED 화이트",
-    "image": "/product04.jpg",
+    "name": "닌텐도 스위치2 OLED 화이트",
+    "image_url": "/product04.jpg",
     "currentBid": 600000,
     "bids": 5,
     "timeLeft": "",
@@ -53,8 +53,8 @@
   },
   {
     "id": 5,
-    "title": "나이키 x 피스마이너스원 에어포스 1 로우 파라노이즈",
-    "image": "/product05.jpg",
+    "name": "나이키 x 피스마이너스원 에어포스 1 로우 파라노이즈",
+    "image_url": "/product05.jpg",
     "currentBid": 456000,
     "bids": 10,
     "timeLeft": "1h 08m",
@@ -66,8 +66,8 @@
   },
   {
     "id": 6,
-    "title": "소니 WH-1000XM5 블루투스 헤드폰",
-    "image": "/product06.jpg",
+    "name": "소니 WH-1000XM5 블루투스 헤드폰",
+    "image_url": "/product06.jpg",
     "currentBid": 250000,
     "bids": 3,
     "timeLeft": "2h 34m",
