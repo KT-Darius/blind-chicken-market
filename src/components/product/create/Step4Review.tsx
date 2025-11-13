@@ -1,7 +1,7 @@
 import { ProductFormData } from "@/types";
 import {
   PRODUCT_CATEGORIES,
-  PRODUCT_CONDITIONS,
+  PRODUCT_STATUS,
   AUCTION_DURATIONS,
 } from "@/lib/constants";
 
@@ -14,13 +14,12 @@ export default function Step4Review({
   formData,
   uploadedImages,
 }: Step4ReviewProps) {
-  // value(ENUM)를 label(한글)로 변환하는 로직
   const categoryLabel =
     PRODUCT_CATEGORIES.find((c) => c.value === formData.category)?.label ||
     formData.category;
-  const conditionLabel =
-    PRODUCT_CONDITIONS.find((c) => c.value === formData.condition)?.label ||
-    formData.condition;
+  const productStatusLabel =
+    PRODUCT_STATUS.find((c) => c.value === formData.productStatus)?.label ||
+    formData.productStatus;
   const durationLabel = AUCTION_DURATIONS.find(
     (d) => d.value === formData.duration,
   )?.label;
@@ -57,7 +56,7 @@ export default function Step4Review({
           <div>
             <p className="text-muted-foreground text-xs">상품명</p>
             <p className="text-foreground font-semibold">
-              {formData.title || "입력되지 않음"}
+              {formData.name || "입력되지 않음"}
             </p>
           </div>
 
@@ -71,7 +70,7 @@ export default function Step4Review({
             <div>
               <p className="text-muted-foreground text-xs">상태</p>
               <p className="text-foreground font-semibold capitalize">
-                {conditionLabel}
+                {productStatusLabel}
               </p>
             </div>
           </div>
@@ -88,7 +87,7 @@ export default function Step4Review({
               <p className="text-muted-foreground text-xs">시작 가격</p>
               <p className="text-foreground font-semibold">
                 {`₩${Number.parseInt(
-                  formData.startingPrice || "0",
+                  formData.startPrice || "0",
                   10,
                 ).toLocaleString()}`}
               </p>

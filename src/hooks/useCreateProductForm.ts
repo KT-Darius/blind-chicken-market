@@ -3,15 +3,20 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/user/useAuth";
 import { ProductFormData } from "@/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-// 백엔드가 Presigned URL 응답으로 줄 타입
+// 백엔드가 Presigned URL 응답으로 줄 타입 (예시)
 interface PresignedUrlResponse {
   uploadUrl: string; // S3에 PUT할 임시 URL
   fileUrl: string; // DB에 저장할 최종 파일 URL (S3 영구 주소)
+}
+
+// 백엔드가 최종 등록 응답으로 줄 타입 (예시)
+interface ProductCreateResponse {
+  productId: number;
 }
 
 export function useCreateProductForm() {
@@ -21,19 +26,19 @@ export function useCreateProductForm() {
 
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<ProductFormData>({
-    title: "",
-    category: "ELECTONICS",
-    condition: "GOOD",
+    name: "",
     description: "",
-    startingPrice: "",
-    duration: "7",
+    category: "ELECTRONICS",
+    startPrice: "",
+    duration: "3",
+    productStatus: "GOOD",
   });
   const [uploadedImages, setUploadedImages] = useState<string[]>([]); // 미리보기용 (blob:)
   const [imageFiles, setImageFiles] = useState<File[]>([]); // 업로드용 (File)
   const [isLoading, setIsLoading] = useState(false); // 폼 제출 로딩
   const [error, setError] = useState<string | null>(null);
 
-  // [유지] 페이지 접근 제어 (Route Guard)
+  // 페이지 접근 제어 (Route Guard)
   useEffect(() => {
     // useAuth 로딩이 끝나고, user가 null일 때
     if (!isAuthLoading && user === null) {
@@ -42,7 +47,15 @@ export function useCreateProductForm() {
     }
   }, [user, isAuthLoading, router]);
 
-  // [유지] 폼 입력 핸들러
+  // Blob URL 메모리 누수 방지 Cleanup 로직
+  useEffect(() => {
+    // 이 훅(CreateProductPage)이 unmount될 때 (페이지를 떠날 때) 실행됨
+    return () => {
+      uploadedImages.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [uploadedImages]);
+
+  // 폼 입력 핸들러
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -52,11 +65,11 @@ export function useCreateProductForm() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // [유지] 스텝 핸들러
+  // 스텝 핸들러
   const handleNextStep = () => step < 4 && setStep(step + 1);
   const handlePrevStep = () => step > 1 && setStep(step - 1);
 
-  // handleSubmit 로직 (Presigned URL 방식)
+  // handleSubmit 로직 (Presigned URL 3단계 방식)
   const handleSubmit = async () => {
     if (imageFiles.length === 0) {
       alert("이미지를 1개 이상 등록해야 합니다.");
@@ -68,26 +81,24 @@ export function useCreateProductForm() {
     setError(null);
 
     try {
-      // --- 백엔드에 Presigned URL 요청 ---
-      // (useAuth가 axios 헤더에 토큰을 자동으로 설정해 줌)
-      // S3에 저장할 파일 이름 목록을 백엔드에 전송
+      // --- 1단계: 백엔드에 Presigned URL 요청 ---
       const fileNames = imageFiles.map((file) => file.name);
 
       const presignedResponse = await axios.post<PresignedUrlResponse[]>(
-        `${API_BASE_URL}/api/products/presigned-urls`, // [백엔드 구현 필요]
+        `${API_BASE_URL}/api/products/presigned-urls`,
         { fileNames },
+        // (useAuth가 axios 헤더에 토큰을 자동으로 설정해 줌)
       );
 
-      // --- 프론트엔드가 S3로 직접 파일 업로드 (병렬 처리) ---
+      // --- 2단계: 프론트엔드가 S3로 직접 파일 업로드 (병렬 처리) ---
       const uploadPromises = presignedResponse.data.map((urlData, index) => {
         const file = imageFiles[index];
-        // 발급받은 임시 URL(uploadUrl)로 S3에 직접 PUT 요청
         return axios.put(urlData.uploadUrl, file, {
           headers: {
             "Content-Type": file.type, // S3는 Content-Type을 명시해야 함
           },
-          // (주의: axios 기본 헤더의 'Authorization' 토큰은 S3 업로드 시 불필요)
-          // S3 업로드 전용 axios 인스턴스를 따로 만드는 것이 더 좋습니다.
+          // S3 업로드 시에는 'Authorization' 헤더가 필요 없으므로,
+          // useAuth의 기본 헤더를 비활성화하는 것이 좋습니다 (단, 지금은 생략 가능)
         });
       });
 
@@ -96,17 +107,25 @@ export function useCreateProductForm() {
       // 업로드 완료된 S3 URL 목록 (DB 저장용)
       const imageUrls = presignedResponse.data.map((data) => data.fileUrl);
 
-      // --- 백엔드에 최종 데이터(JSON) 전송 ---
+      // --- 3단계: 백엔드에 최종 데이터(JSON) 전송 ---
+      // 백엔드 DTO 형식에 맞게 프론트엔드 상태(formData)를 변환
       const finalProductData = {
-        ...formData,
-        startingPrice: parseInt(formData.startingPrice, 10),
-        duration: parseInt(formData.duration, 10),
-        imageUrls: imageUrls, // [중요] S3 URL 목록 추가
+        name: formData.name,
+        description: formData.description,
+        category: formData.category,
+        price: parseInt(formData.startPrice, 10),
+        productStatus: formData.productStatus,
+        // [중요] 백엔드 DTO가 imageUrl (단일)을 받는지 imageUrls (배열)를 받는지 확인!
+        // 여기서는 임시 테스트 API 형식(단일) 대신, Presigned URL 방식(배열)을 가정합니다.
+        // 만약 백엔드가 'imageUrl' (단일)만 받는다면:
+        // imageUrl: imageUrls[0], // -> 이렇게 첫 번째 URL만 전송
+        imageUrls: imageUrls, // -> 백엔드가 리스트를 받는다고 가정
+        // formData.duration은 백엔드 DTO에 없으므로 제외
       };
 
-      const response = await axios.post(
-        `${API_BASE_URL}/api/products`, // [백엔드 수정 필요]
-        finalProductData, // [중요] 이제 FormData가 아닌 JSON 전송
+      const response = await axios.post<ProductCreateResponse>(
+        `${API_BASE_URL}/api/products`,
+        finalProductData, // JSON으로 전송
         {
           headers: { "Content-Type": "application/json" },
         },
@@ -114,7 +133,7 @@ export function useCreateProductForm() {
 
       console.log("상품 등록 성공:", response.data);
       alert("상품이 성공적으로 등록되었습니다!");
-      router.push(`/products/${response.data.productId}`);
+      router.push(`/products/${response.data.productId}`); // 백엔드 응답 확인 필요
     } catch (err) {
       console.error("상품 등록 실패:", err);
       setError("상품 등록에 실패했습니다. 다시 시도해주세요.");

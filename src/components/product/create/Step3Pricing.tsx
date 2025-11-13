@@ -32,13 +32,13 @@ export default function Step3Pricing({
             </span>
             <Input
               type="number"
-              name="startingPrice"
+              name="startPrice"
               placeholder="0"
-              value={formData.startingPrice}
+              value={formData.startPrice}
               onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,
-                  startingPrice: e.target.value,
+                  startPrice: e.target.value,
                 }))
               }
               className="flex-1"

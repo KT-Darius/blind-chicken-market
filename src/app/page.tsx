@@ -3,7 +3,7 @@
 import Link from "next/link";
 import ProductCard from "@/components/product/ProductCard";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/user/useAuth";
 import products from "@/mocks/products.json";
 
 export default function Home() {

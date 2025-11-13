@@ -1,11 +1,11 @@
 import { Input } from "@/components/ui/input";
 import { ProductFormData } from "@/types";
-import { PRODUCT_CATEGORIES, PRODUCT_CONDITIONS } from "@/lib/constants";
+import { PRODUCT_CATEGORIES, PRODUCT_STATUS } from "@/lib/constants";
 
 interface Step2DetailsProps {
   formData: Pick<
     ProductFormData,
-    "title" | "category" | "condition" | "description"
+    "name" | "category" | "productStatus" | "description"
   >;
   onChange: (
     e: React.ChangeEvent<
@@ -26,21 +26,21 @@ export default function Step2Details({
       </div>
 
       <div className="space-y-4">
-        {/* Title */}
+        {/* name */}
         <div>
           <label className="text-foreground mb-2 block text-sm font-medium">
             상품명 *
           </label>
           <Input
-            name="title"
+            name="name"
             placeholder="상품명을 입력해주세요 (예: 삼성 갤럭시 버즈 프로)"
-            value={formData.title}
+            value={formData.name}
             onChange={onChange}
             className="w-full"
           />
         </div>
 
-        {/* Category & Condition */}
+        {/* Category & productStatus */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-foreground mb-2 block text-sm font-medium">
@@ -64,12 +64,12 @@ export default function Step2Details({
               상태 *
             </label>
             <select
-              name="condition"
-              value={formData.condition}
+              name="productStatus"
+              value={formData.productStatus}
               onChange={onChange}
               className="border-border bg-background text-foreground focus:ring-primary w-full rounded-md border px-3 py-2 focus:ring-2 focus:outline-none"
             >
-              {PRODUCT_CONDITIONS.map((cond) => (
+              {PRODUCT_STATUS.map((cond) => (
                 <option key={cond.value} value={cond.value}>
                   {cond.label}
                 </option>

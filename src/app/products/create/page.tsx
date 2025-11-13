@@ -4,11 +4,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { useCreateProductForm } from "@/hooks/useCreateProductForm";
-import ProgressIndicator from "@/components/common/ProgressIndicator";
-import Step1UploadPhotos from "@/components/forms/Step1UploadPhotos";
-import Step2Details from "@/components/forms/Step2Details";
-import Step3Pricing from "@/components/forms/Step3Pricing";
-import Step4Review from "@/components/forms/Step4Review";
+import ProgressIndicator from "@/components/product/create/ProgressIndicator";
+import Step1UploadPhotos from "@/components/product/create/Step1UploadPhotos";
+import Step2Details from "@/components/product/create/Step2Details";
+import Step3Pricing from "@/components/product/create/Step3Pricing";
+import Step4Review from "@/components/product/create/Step4Review";
 
 export default function CreateProductPage() {
   const {

@@ -3,6 +3,7 @@
 import { Upload } from "lucide-react";
 import { useEffect } from "react";
 
+// Props 타입
 interface Step1UploadPhotosProps {
   uploadedImages: string[];
   setUploadedImages: React.Dispatch<React.SetStateAction<string[]>>;
@@ -16,44 +17,50 @@ export default function Step1UploadPhotos({
   imageFiles,
   setImageFiles,
 }: Step1UploadPhotosProps) {
+  // '이전' 버튼으로 돌아왔을 때 Blob URL을 재생성하는 로직
+  useEffect(() => {
+    // File 객체는 있는데, Blob URL(미리보기)이 부족하면 재생성
+    if (imageFiles.length > uploadedImages.length) {
+      // 기존 URL은 유지하고, 부족한 것만 추가
+      const missingCount = imageFiles.length - uploadedImages.length;
+      const newUrls = imageFiles
+        .slice(-missingCount)
+        .map((file) => URL.createObjectURL(file));
+      setUploadedImages((prev) => [...prev, ...newUrls]);
+    }
+  }, [imageFiles.length, uploadedImages.length, imageFiles, setUploadedImages]);
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const totalFiles = imageFiles.length + files.length;
 
     if (totalFiles > 5) {
       alert("사진은 최대 5개까지만 업로드할 수 있습니다.");
+      e.target.value = ""; // input 리셋
       return;
     }
 
-    files.forEach((file) => {
-      // 업로드용 File 객체 저장
-      setImageFiles((prevFiles) => [...prevFiles, file]);
+    // 모든 파일을 한 번에 처리
+    const newFiles = [...files];
+    const newUrls = files.map((file) => URL.createObjectURL(file));
 
-      // FileReader 대신 URL.createObjectURL 사용
-      const blobUrl = URL.createObjectURL(file);
-      setUploadedImages((prevImages) => [...prevImages, blobUrl]);
-    });
+    // 상태 업데이트를 한 번에
+    setImageFiles((prevFiles) => [...prevFiles, ...newFiles]);
+    setUploadedImages((prevImages) => [...prevImages, ...newUrls]);
+
+    // input 값 리셋 (같은 파일 재선택 가능하도록)
+    e.target.value = "";
   };
 
-  // removeImage 로직
   const removeImage = (indexToRemove: number) => {
-    // 제거할 blob URL을 찾아서 메모리에서 해제(revoke)
     const urlToRemove = uploadedImages[indexToRemove];
     if (urlToRemove) {
-      URL.revokeObjectURL(urlToRemove);
+      URL.revokeObjectURL(urlToRemove); // 개별 삭제 시 메모리 해제
     }
-
     // 두 상태에서 모두 제거
     setUploadedImages((prev) => prev.filter((_, i) => i !== indexToRemove));
     setImageFiles((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
-
-  // 컴포넌트가 언마운트될 때 blob URL들을 모두 해제 (메모리 누수 방지)
-  useEffect(() => {
-    return () => {
-      uploadedImages.forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, [uploadedImages]); // uploadedImages 배열 자체가 바뀔 때(예: 페이지 이동)
 
   const remainingUploads = 5 - imageFiles.length;
 
@@ -67,7 +74,6 @@ export default function Step1UploadPhotos({
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-        {/* Upload Box */}
         {remainingUploads > 0 && (
           <label className="border-border hover:bg-muted col-span-2 flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors md:col-span-1">
             <Upload className="text-muted-foreground mb-2 h-8 w-8" />
@@ -86,7 +92,6 @@ export default function Step1UploadPhotos({
           </label>
         )}
 
-        {/* Uploaded Images */}
         {uploadedImages.map((img, idx) => (
           <div key={idx} className="group relative">
             <img

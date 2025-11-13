@@ -3,8 +3,8 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
-import { SignupForm } from "@/components/forms/SignupForm";
+import { useAuth } from "@/hooks/user/useAuth";
+import { SignupForm } from "@/components/user/SignupForm";
 import { Loader2 } from "lucide-react";
 
 export default function SignupPage() {

@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { FormInput } from "./FormInput";
 import { TermsCheckbox } from "./TermsCheckbox";
-import { useSignupForm } from "@/hooks/useSignupForm";
+import { useSignupForm } from "@/hooks/user/useSignupForm";
 
 export function SignupForm() {
   const {

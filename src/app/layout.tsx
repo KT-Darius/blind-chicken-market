@@ -1,7 +1,7 @@
 import Navigation from "@/components/common/navigation";
 import "./globals.css";
 import type { Metadata } from "next";
-import { AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider } from "@/hooks/user/useAuth";
 
 export const metadata: Metadata = {
   title: "Blind Chicken Market",

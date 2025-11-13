@@ -14,10 +14,10 @@ export const PRODUCT_CATEGORIES = [
 /**
  * 상품 상태 (ERD: product_status ENUM)
  */
-export const PRODUCT_CONDITIONS = [
+export const PRODUCT_STATUS = [
   { label: "좋음", value: "GOOD" },
-  { label: "보통", value: "AVERAGE" },
   { label: "나쁨", value: "BAD" },
+  { label: "새상품", value: "NEW" },
 ];
 
 /**
