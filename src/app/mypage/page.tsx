@@ -1,19 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Star, LogOut, Edit2 } from "lucide-react";
+import axios from "axios";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 const mockUser = {
-  username: "익명 사용자 #4821",
+  nickname: "익명 사용자 #4821",
   joinDate: "2024년 11월 가입",
   rating: 4.8,
   reviews: 127,
   wins: 23,
   active: 5,
 };
+
+type UserProfile = {
+  nickname: string;
+  joinDate: string;
+  rating: number;
+  reviews: number;
+  wins: number;
+  active: number;
+}
 
 const mockAuctions = [
   {
@@ -48,7 +60,34 @@ const mockAuctions = [
 
 export default function MyPage() {
   const [activeTab, setActiveTab] = useState("activity");
+  const [user, setUser] = useState<UserProfile>(mockUser);
 
+  // 1. 화면에 진입했을때 useEffect
+  useEffect(() => {
+    console.log("맨 처음 렌더링될 때 한 번만 실행");
+    fetchUser();
+  },[]);
+
+  // 2. 서버 호출, axios or fetch
+  async function fetchUser() {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/users/me`,
+      );
+      console.log("사용자 정보 가져오기 성공:", response.data);
+      setUser(response.data);
+    } catch (err) {
+      console.error("사용자 정보 가져오기 실패:", err);
+    } finally {
+      //setIsLoading(false);
+    }
+  }
+
+  // 3. 서버 데이터 받음
+  // 4. 화면에 렌더링, useState
+  // 5. 백엔드 api주소 변경 확인
+  // 6. postman으로 api작동 확인
+  // 7. 디버깅 또는 오류 수정
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }).map((_, i) => (
       <Star
@@ -56,6 +95,12 @@ export default function MyPage() {
         className={`h-4 w-4 ${i < Math.floor(rating) ? "fill-foreground text-foreground" : "text-border"}`}
       />
     ));
+  };
+
+  // 프로필 수정 버튼 클릭 시 실행될 함수
+  const handleEditProfile = () => {
+    const editUrl = "/mypage/edit"; // 1단계에서 만든 페이지 주소
+    window.open(editUrl, "_blank"); // _blank는 '새 탭'을 의미
   };
 
   return (
@@ -66,10 +111,10 @@ export default function MyPage() {
           <div className="mb-8 flex items-start justify-between gap-4">
             <div className="flex-1">
               <h1 className="text-foreground text-3xl font-bold md:text-4xl">
-                {mockUser.username}
+                {user.nickname}
               </h1>
               <p className="text-muted-foreground mt-2 text-sm">
-                {mockUser.joinDate}
+                {user.joinDate}
               </p>
             </div>
             <div className="flex gap-2">
@@ -77,6 +122,7 @@ export default function MyPage() {
                 variant="outline"
                 size="sm"
                 className="gap-2 rounded-lg bg-transparent"
+                onClick={handleEditProfile}
               >
                 <Edit2 className="h-4 w-4" />
                 프로필 수정
@@ -100,12 +146,12 @@ export default function MyPage() {
               </p>
               <div className="flex items-center gap-2">
                 <p className="text-foreground text-3xl font-bold">
-                  {mockUser.rating}
+                  {user.rating}
                 </p>
-                <div className="flex gap-1">{renderStars(mockUser.rating)}</div>
+                <div className="flex gap-1">{renderStars(user.rating)}</div>
               </div>
               <p className="text-muted-foreground text-xs">
-                {mockUser.reviews}개 리뷰
+                {user.reviews}개 리뷰
               </p>
             </div>
 
@@ -115,7 +161,7 @@ export default function MyPage() {
                 낙찰
               </p>
               <p className="text-foreground text-3xl font-bold">
-                {mockUser.wins}
+                {user.wins}
               </p>
               <p className="text-muted-foreground text-xs">총 낙찰 상품</p>
             </div>
@@ -126,7 +172,7 @@ export default function MyPage() {
                 진행중인 입찰
               </p>
               <p className="text-foreground text-3xl font-bold">
-                {mockUser.active}
+                {user.active}
               </p>
               <p className="text-muted-foreground text-xs">현재 입찰 중</p>
             </div>
