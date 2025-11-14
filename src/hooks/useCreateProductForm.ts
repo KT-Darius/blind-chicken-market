@@ -14,7 +14,7 @@ interface ProductCreateResponse {
 
 export function useCreateProductForm() {
   const router = useRouter();
-  const { user, isLoading: isAuthLoading } = useAuth();
+  const { user, isLoading: isAuthLoading, accessToken } = useAuth();
 
   const [step, setStep] = useState(1);
   const defaultBidEndDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
@@ -71,8 +71,7 @@ export function useCreateProductForm() {
     setError(null);
 
     try {
-      const productFormData = new FormData();
-
+      
       const jsonData = JSON.stringify({
         name: formData.name,
         description: formData.description,
@@ -85,23 +84,25 @@ export function useCreateProductForm() {
         imageUrl: formData.imageUrl,
       });
 
-      productFormData.append(
-        "requestDto",
-        new Blob([jsonData], { type: "application/json" }),
-      );
+      // productFormData.append(
+      //   "requestDto",
+      //   new Blob([jsonData], { type: "application/json" }),
+      // );
 
-      imageFiles.forEach((file) => {
-        productFormData.append("images", file);
+      // imageFiles.forEach((file) => {
+      //   productFormData.append("images", file);
+      // });
+
+      await axios.post(`${API_BASE_URL}/api/products`, jsonData, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        }
+      }).then(result => {
+        alert("상품이 성공적으로 등록됐습니다.");  
+        router.push(`/products/${result.data.id}`)
       });
 
-      const response = await axios.post<ProductCreateResponse>(
-        `${API_BASE_URL}/api/products`,
-        productFormData,
-      );
-
-      console.log("상품 등록 성공:", response.data);
-      alert("상품이 성공적으로 등록되었습니다!");
-      router.push(`/products/${response.data.productId}`);
     } catch (err) {
       console.error("상품 등록 실패:", err);
       setError("상품 등록에 실패했습니다. 다시 시도해주세요.");
