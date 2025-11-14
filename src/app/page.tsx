@@ -32,12 +32,12 @@ export default function Home() {
           setProducts(data.content);
         } else {
           console.warn("API returned empty list, loading mock data.");
-          setProducts(mockData);
+          setProducts(mockData as Product[]);
         }
       } catch (error) {
         // API fetch 자체가 실패한 경우(네트워크 오류, 서버 다운 등) mock 데이터 사용
         console.error("API fetch failed, loading mock data:", error);
-        setProducts(mockData);
+        setProducts(mockData as Product[]);
       } finally {
         setLoading(false);
       }

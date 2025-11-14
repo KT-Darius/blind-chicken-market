@@ -52,11 +52,21 @@ export interface Product {
   category: string;
   startPrice: number;
   bidPrice: number;
+  bidCount: number;
+  bidStatus: string;
   productStatus: "GOOD" | "BAD" | "NEW" | string;
   imageUrl: string;
-  user?: User;
-  createdAt?: string;
-  modifiedAt?: string;
+  user: User;
+  createdAt: string;
+  modifiedAt: string;
+  productBids: ProductBid[];
+}
+
+export interface ProductBid {
+  productBidId: number;
+  price: number;
+  bidderNickname: string;
+  bidTime: string;
 }
 
 // POST 상품 등록
@@ -64,7 +74,7 @@ export interface CreateProductRequest {
   name: string;
   description: string;
   category: string;
-  startPrice: number; // API 기준
+  startPrice: number;
   productStatus: "GOOD" | "BAD" | "NEW" | string;
   imageUrl: string;
 }

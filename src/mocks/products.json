@@ -6,8 +6,39 @@
     "category": "ELECTRONICS",
     "startPrice": 1800000,
     "bidPrice": 1970000,
+    "bidCount": 12,
+    "bidStatus": "ACTIVE",
     "productStatus": "GOOD",
-    "imageUrl": "/product01.jpeg"
+    "imageUrl": "/product01.jpeg",
+    "user": {
+      "id": 1,
+      "nickname": "테크마니아",
+      "email": "techmania@example.com",
+      "role": "USER",
+      "phoneNumber": "010-1234-5678"
+    },
+    "createdAt": "2025-11-10T10:30:00",
+    "modifiedAt": "2025-11-13T15:45:00",
+    "productBids": [
+      {
+        "productBidId": 1,
+        "price": 1850000,
+        "bidderNickname": "스마트폰수집가",
+        "bidTime": "2025-11-10T11:00:00"
+      },
+      {
+        "productBidId": 2,
+        "price": 1900000,
+        "bidderNickname": "애플팬",
+        "bidTime": "2025-11-11T09:20:00"
+      },
+      {
+        "productBidId": 3,
+        "price": 1970000,
+        "bidderNickname": "IT헌터",
+        "bidTime": "2025-11-13T15:45:00"
+      }
+    ]
   },
   {
     "id": 2,
@@ -16,8 +47,39 @@
     "category": "ELECTRONICS",
     "startPrice": 330000,
     "bidPrice": 375000,
+    "bidCount": 8,
+    "bidStatus": "ACTIVE",
     "productStatus": "NEW",
-    "imageUrl": "/product02.jpg"
+    "imageUrl": "/product02.jpg",
+    "user": {
+      "id": 2,
+      "nickname": "오디오매니아",
+      "email": "audiomania@example.com",
+      "role": "USER",
+      "phoneNumber": "010-2345-6789"
+    },
+    "createdAt": "2025-11-09T14:20:00",
+    "modifiedAt": "2025-11-13T18:30:00",
+    "productBids": [
+      {
+        "productBidId": 4,
+        "price": 340000,
+        "bidderNickname": "음악러버",
+        "bidTime": "2025-11-09T15:00:00"
+      },
+      {
+        "productBidId": 5,
+        "price": 360000,
+        "bidderNickname": "애플덕후",
+        "bidTime": "2025-11-12T10:15:00"
+      },
+      {
+        "productBidId": 6,
+        "price": 375000,
+        "bidderNickname": "청음의달인",
+        "bidTime": "2025-11-13T18:30:00"
+      }
+    ]
   },
   {
     "id": 3,
@@ -26,8 +88,39 @@
     "category": "FASHION",
     "startPrice": 140000,
     "bidPrice": 160000,
+    "bidCount": 5,
+    "bidStatus": "ACTIVE",
     "productStatus": "NEW",
-    "imageUrl": "/product03.jpg"
+    "imageUrl": "/product03.jpg",
+    "user": {
+      "id": 3,
+      "nickname": "패션피플",
+      "email": "fashionpeople@example.com",
+      "role": "USER",
+      "phoneNumber": "010-3456-7890"
+    },
+    "createdAt": "2025-11-11T09:00:00",
+    "modifiedAt": "2025-11-13T12:00:00",
+    "productBids": [
+      {
+        "productBidId": 7,
+        "price": 145000,
+        "bidderNickname": "스트릿웨어",
+        "bidTime": "2025-11-11T10:30:00"
+      },
+      {
+        "productBidId": 8,
+        "price": 155000,
+        "bidderNickname": "후디수집가",
+        "bidTime": "2025-11-12T14:20:00"
+      },
+      {
+        "productBidId": 9,
+        "price": 160000,
+        "bidderNickname": "미니멀리스트",
+        "bidTime": "2025-11-13T12:00:00"
+      }
+    ]
   },
   {
     "id": 4,
@@ -36,8 +129,39 @@
     "category": "ELECTRONICS",
     "startPrice": 500000,
     "bidPrice": 550000,
+    "bidCount": 15,
+    "bidStatus": "ACTIVE",
     "productStatus": "GOOD",
-    "imageUrl": "/product04.jpg"
+    "imageUrl": "/product04.jpg",
+    "user": {
+      "id": 4,
+      "nickname": "게이머프로",
+      "email": "gamerpro@example.com",
+      "role": "USER",
+      "phoneNumber": "010-4567-8901"
+    },
+    "createdAt": "2025-11-08T16:45:00",
+    "modifiedAt": "2025-11-13T20:15:00",
+    "productBids": [
+      {
+        "productBidId": 10,
+        "price": 510000,
+        "bidderNickname": "닌텐도팬",
+        "bidTime": "2025-11-08T17:30:00"
+      },
+      {
+        "productBidId": 11,
+        "price": 530000,
+        "bidderNickname": "젤다의전설",
+        "bidTime": "2025-11-10T13:45:00"
+      },
+      {
+        "productBidId": 12,
+        "price": 550000,
+        "bidderNickname": "스위치마스터",
+        "bidTime": "2025-11-13T20:15:00"
+      }
+    ]
   },
   {
     "id": 5,
@@ -46,8 +170,39 @@
     "category": "FASHION",
     "startPrice": 356000,
     "bidPrice": 456000,
+    "bidCount": 20,
+    "bidStatus": "ACTIVE",
     "productStatus": "BAD",
-    "imageUrl": "/product05.jpg"
+    "imageUrl": "/product05.jpg",
+    "user": {
+      "id": 5,
+      "nickname": "스니커헤드",
+      "email": "sneakerhead@example.com",
+      "role": "USER",
+      "phoneNumber": "010-5678-9012"
+    },
+    "createdAt": "2025-11-07T11:20:00",
+    "modifiedAt": "2025-11-14T09:30:00",
+    "productBids": [
+      {
+        "productBidId": 13,
+        "price": 380000,
+        "bidderNickname": "나이키콜렉터",
+        "bidTime": "2025-11-07T12:00:00"
+      },
+      {
+        "productBidId": 14,
+        "price": 420000,
+        "bidderNickname": "한정판헌터",
+        "bidTime": "2025-11-09T16:30:00"
+      },
+      {
+        "productBidId": 15,
+        "price": 456000,
+        "bidderNickname": "슈즈마니아",
+        "bidTime": "2025-11-14T09:30:00"
+      }
+    ]
   },
   {
     "id": 6,
@@ -56,7 +211,38 @@
     "category": "ELECTRONICS",
     "startPrice": 150000,
     "bidPrice": 250000,
+    "bidCount": 18,
+    "bidStatus": "ACTIVE",
     "productStatus": "NEW",
-    "imageUrl": "/product06.jpg"
+    "imageUrl": "/product06.jpg",
+    "user": {
+      "id": 6,
+      "nickname": "오디오파일",
+      "email": "audiophile@example.com",
+      "role": "USER",
+      "phoneNumber": "010-6789-0123"
+    },
+    "createdAt": "2025-11-06T13:15:00",
+    "modifiedAt": "2025-11-14T08:45:00",
+    "productBids": [
+      {
+        "productBidId": 16,
+        "price": 170000,
+        "bidderNickname": "소음제거왕",
+        "bidTime": "2025-11-06T14:00:00"
+      },
+      {
+        "productBidId": 17,
+        "price": 210000,
+        "bidderNickname": "소니팬",
+        "bidTime": "2025-11-11T11:20:00"
+      },
+      {
+        "productBidId": 18,
+        "price": 250000,
+        "bidderNickname": "고음질추구자",
+        "bidTime": "2025-11-14T08:45:00"
+      }
+    ]
   }
 ]
