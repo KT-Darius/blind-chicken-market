@@ -17,12 +17,15 @@ export function useCreateProductForm() {
   const { user, isLoading: isAuthLoading } = useAuth();
 
   const [step, setStep] = useState(1);
+  const defaultBidEndDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
   const [formData, setFormData] = useState<ProductFormData>({
     name: "",
     description: "",
     category: "ELECTRONICS",
     startPrice: "",
-    duration: "7",
+    bidEndDate: defaultBidEndDate,
     productStatus: "GOOD",
     imageUrl:
       "https://cdn.inflearn.com/public/files/courses/335872/cover/01jqb5mphmn93fqvvs4ad8z6t1",
@@ -75,6 +78,9 @@ export function useCreateProductForm() {
         description: formData.description,
         category: formData.category,
         price: parseInt(formData.startPrice, 10),
+        bidEndDate: formData.bidEndDate
+          ? new Date(formData.bidEndDate).toISOString()
+          : null,
         productStatus: formData.productStatus,
         imageUrl: formData.imageUrl,
       });

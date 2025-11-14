@@ -54,7 +54,7 @@ export interface Product {
   bidPrice: number;
   bidCount: number;
   bidStatus: string;
-  productStatus: "GOOD" | "BAD" | "NEW" | string;
+  productStatus: string;
   imageUrl: string;
   user: User;
   createdAt: string;
@@ -75,7 +75,8 @@ export interface CreateProductRequest {
   description: string;
   category: string;
   startPrice: number;
-  productStatus: "GOOD" | "BAD" | "NEW" | string;
+  bidEndDate: Date;
+  productStatus: string;
   imageUrl: string;
 }
 

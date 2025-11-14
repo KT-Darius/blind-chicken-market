@@ -1,9 +1,5 @@
 import { ProductFormData } from "@/types";
-import {
-  PRODUCT_CATEGORIES,
-  PRODUCT_STATUS,
-  AUCTION_DURATIONS,
-} from "@/lib/constants";
+import { PRODUCT_CATEGORIES, PRODUCT_STATUS } from "@/lib/constants";
 
 interface Step4ReviewProps {
   formData: ProductFormData;
@@ -20,9 +16,9 @@ export default function Step4Review({
   const productStatusLabel =
     PRODUCT_STATUS.find((c) => c.value === formData.productStatus)?.label ||
     formData.productStatus;
-  const durationLabel = AUCTION_DURATIONS.find(
-    (d) => d.value === formData.duration,
-  )?.label;
+  const endDateLabel = formData.bidEndDate
+    ? new Date(formData.bidEndDate).toLocaleDateString("ko-KR")
+    : "지정되지 않음";
 
   return (
     <div className="space-y-6">
@@ -93,8 +89,8 @@ export default function Step4Review({
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground text-xs">경매 기간</p>
-              <p className="text-foreground font-semibold">{durationLabel}</p>
+              <p className="text-muted-foreground text-xs">경매 종료 날짜</p>
+              <p className="text-foreground font-semibold">{endDateLabel}</p>
             </div>
           </div>
         </div>

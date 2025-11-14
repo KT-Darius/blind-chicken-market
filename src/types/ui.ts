@@ -22,7 +22,7 @@ export type ProductFormData = {
   description: string;
   category: string;
   startPrice: string; // string으로 입력받고, 전송 시 number로 변환
-  duration: string; // 경매 기간 (일 단위)
+  bidEndDate?: string; // 경매 종료 날짜 (YYYY-MM-DD)
   productStatus: "GOOD" | "BAD" | "NEW" | string;
   imageUrl?: string;
 };

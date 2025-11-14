@@ -1,6 +1,5 @@
 import { Input } from "@/components/ui/input";
 import { ProductFormData } from "@/types";
-import { AUCTION_DURATIONS } from "@/lib/constants";
 
 interface Step3PricingProps {
   formData: ProductFormData;
@@ -48,28 +47,20 @@ export default function Step3Pricing({
           </div>
         </div>
 
-        {/* Duration */}
+        {/* Auction end date */}
         <div>
-          <label className="text-foreground mb-3 block text-sm font-medium">
-            경매 기간
+          <label className="text-foreground mb-2 block text-sm font-medium">
+            경매 종료 날짜 *
           </label>
-          <div className="grid grid-cols-2 gap-3">
-            {AUCTION_DURATIONS.map((dur) => (
-              <button
-                key={dur.value}
-                onClick={() =>
-                  setFormData((prev) => ({ ...prev, duration: dur.value }))
-                }
-                className={`rounded-lg border-2 p-3 font-medium transition-all ${
-                  formData.duration === dur.value
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background text-foreground hover:border-muted-foreground"
-                }`}
-              >
-                {dur.label}
-              </button>
-            ))}
-          </div>
+          <Input
+            type="date"
+            name="bidEndDate"
+            value={formData.bidEndDate || ""}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, bidEndDate: e.target.value }))
+            }
+            className="max-w-xs"
+          />
         </div>
       </div>
     </div>
