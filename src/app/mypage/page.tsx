@@ -80,7 +80,16 @@ export default function MyPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   // 1. 화면에 진입했을때 useEffect
-    useEffect(() => {
+  useEffect(() => {
+    // createdAt(예: 2025-11-14T15:16:03.104117)을
+    // "2025년 11월 가입" 형태로 바꾸는 함수
+    const formatJoinDate = (isoString: string) => {
+      const date = new Date(isoString);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1; // 0부터 시작하니까 +1
+      return `${year}년 ${month}월 가입`;
+    };
+
     const fetchUserAndSetNickname = async () => {
       try {
         const response = await axios.get(
@@ -88,14 +97,19 @@ export default function MyPage() {
           { withCredentials: true }
         );
 
+        const apiUser = response.data;
+
         // 백엔드 응답을 화면에서 쓸 형태로 변환
         const fetchedUser: UserProfile = {
-          nickname: response.data.nickname ?? mockUser.nickname,
-          joinDate: response.data.joinDate ?? mockUser.joinDate,
-          rating: response.data.rating ?? mockUser.rating,
-          reviews: response.data.reviews ?? mockUser.reviews,
-          wins: response.data.wins ?? mockUser.wins,
-          active: response.data.active ?? mockUser.active,
+          nickname: apiUser.nickname ?? mockUser.nickname,
+          // ✅ createdAt 값을 이용해서 실제 가입일 문자열 만들기
+          joinDate: apiUser.createdAt
+            ? formatJoinDate(apiUser.createdAt)
+            : mockUser.joinDate,
+          rating: apiUser.rating ?? mockUser.rating,
+          reviews: apiUser.reviews ?? mockUser.reviews,
+          wins: apiUser.wins ?? mockUser.wins,
+          active: apiUser.active ?? mockUser.active,
         };
 
         setUser(fetchedUser);
@@ -122,7 +136,6 @@ export default function MyPage() {
 
     fetchUserAndSetNickname();
   }, [router]);
-
 
   // 3. 닉네임 저장 함수
   const handleSave = async () => {
