@@ -1,5 +1,6 @@
 "use client";
 
+import type { Product, ProductListResponse } from "@/types";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -78,9 +79,20 @@ export default function MyPage() {
   const [user, setUser] = useState<UserProfile>(mockUser);
   const [nickname, setNickname] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [sellingProducts, setSellingProducts] = useState<Product[]>([]);
 
   // 1. 화면에 진입했을때 useEffect
-    useEffect(() => {
+  useEffect(() => {
+    // createdAt(예: 2025-11-14T15:16:03.104117)을
+    // "2025년 11월 가입" 형태로 바꾸는 함수
+    const formatJoinDate = (isoString: string) => {
+      const date = new Date(isoString);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1; // 0부터 시작하니까 +1
+      return `${year}년 ${month}월 가입`;
+    };
+
+    // 🔹 1) 유저 기본 정보 가져오기
     const fetchUserAndSetNickname = async () => {
       try {
         const response = await axios.get(
@@ -88,41 +100,64 @@ export default function MyPage() {
           { withCredentials: true }
         );
 
-        // 백엔드 응답을 화면에서 쓸 형태로 변환
+        const apiUser = response.data;
+
         const fetchedUser: UserProfile = {
-          nickname: response.data.nickname ?? mockUser.nickname,
-          joinDate: response.data.joinDate ?? mockUser.joinDate,
-          rating: response.data.rating ?? mockUser.rating,
-          reviews: response.data.reviews ?? mockUser.reviews,
-          wins: response.data.wins ?? mockUser.wins,
-          active: response.data.active ?? mockUser.active,
+          nickname: apiUser.nickname ?? mockUser.nickname,
+          joinDate: apiUser.createdAt
+            ? formatJoinDate(apiUser.createdAt)
+            : mockUser.joinDate,
+          rating: apiUser.rating ?? mockUser.rating,
+          reviews: apiUser.reviews ?? mockUser.reviews,
+          wins: apiUser.wins ?? mockUser.wins,
+          active: apiUser.active ?? mockUser.active,
         };
 
         setUser(fetchedUser);
         setNickname(fetchedUser.nickname);
       } catch (error) {
-        // 401 / 403 이면 로그인 필요 → 로그인 페이지로 이동
         if (axios.isAxiosError(error)) {
           const status = error.response?.status;
-
           if (status === 401 || status === 403) {
             console.warn("인증 오류로 401/403 발생:", error);
             alert("로그인이 필요합니다. 로그인 페이지로 이동합니다.");
             router.push("/login");
-            return; // ❗ 여기서 함수 종료 (에러 다시 던지지 않음)
+            return;
           }
         }
 
-        // 그 외 에러는 콘솔만 찍고, 목업 유저로 표시
         console.error("사용자 정보 가져오기 실패:", error);
         setUser(mockUser);
         setNickname(mockUser.nickname);
       }
     };
 
-    fetchUserAndSetNickname();
-  }, [router]);
+    // 🔹 2) 내가 등록한 상품(판매 중 상품) 가져오기
+    const fetchUserProducts = async () => {
+      try {
+        const response = await axios.get(
+          `${API_BASE_URL}/api/users/me/products`,
+          { withCredentials: true }
+        );
 
+        const data = response.data;
+
+        // 응답이 배열인지 content[]인지 모두 처리
+        const products: Product[] = Array.isArray(data)
+          ? data
+          : data?.content ?? [];
+
+        setSellingProducts(products);
+      } catch (error) {
+        console.error("판매중 상품 조회 실패:", error);
+        setSellingProducts([]);
+      }
+    };
+
+    // 🔥 useEffect 실행할 때 두 개 다 호출
+    fetchUserAndSetNickname();
+    fetchUserProducts(); // ← 바로 여기가 핵심!!
+  }, [router]);
 
   // 3. 닉네임 저장 함수
   const handleSave = async () => {
@@ -282,7 +317,7 @@ export default function MyPage() {
             {/* Active Bids */}
             <div className="bg-card border-border space-y-2 rounded-lg border p-4">
               <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
-                진행중인 입찰
+                진행 중인 입찰
               </p>
               <p className="text-foreground text-3xl font-bold">
                 {user.active}
@@ -297,8 +332,8 @@ export default function MyPage() {
           <div className="flex gap-8 overflow-x-auto">
             {[
               { id: "activity", label: "활동" },
-              { id: "selling", label: "판매중" },
-              { id: "watchlist", label: "관심상품" },
+              { id: "selling", label: "판매 중" },
+              { id: "watchlist", label: "관심 상품" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -316,57 +351,109 @@ export default function MyPage() {
         </div>
 
         {/* Tab Content */}
-        {(activeTab === "activity" || activeTab === "selling") && (
+
+        {/* 1) 활동 탭: 기존 목업 데이터 유지 */}
+        {activeTab === "activity" && (
           <div className="space-y-3">
-            {mockAuctions
-              .filter((a) =>
-                activeTab === "selling" ? a.role === "seller" : true,
-              )
-              .map((item) => (
-                <Link key={item.id} href={`/product/${item.id}`}>
-                  <div className="border-border hover:bg-muted flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors">
-                    <div className="flex-1">
-                      <p className="text-foreground font-medium">
-                        {item.title}
-                      </p>
-                      <div className="mt-2 flex items-center gap-2">
-                        <Badge
-                          variant={
-                            item.role === "seller" ? "default" : "secondary"
-                          }
-                          className="text-xs"
-                        >
-                          {item.role === "seller" ? "판매" : "낙찰"}
-                        </Badge>
-                        <p className="text-muted-foreground text-xs">
-                          {item.status === "active" ? "진행중" : "완료"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-foreground text-lg font-bold">
-                        ₩{item.price.toLocaleString()}
-                      </p>
-                      <p
-                        className={`mt-1 text-xs font-medium ${
-                          item.status === "active"
-                            ? "text-primary"
-                            : "text-muted-foreground"
-                        }`}
+            {mockAuctions.map((item) => (
+              <Link key={item.id} href={`/product/${item.id}`}>
+                <div className="border-border hover:bg-muted flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors">
+                  <div className="flex-1">
+                    <p className="text-foreground font-medium">
+                      {item.title}
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Badge
+                        variant={
+                          item.role === "seller" ? "default" : "secondary"
+                        }
+                        className="text-xs"
                       >
-                        {item.status === "active" ? "진행중" : "완료"}
+                        {item.role === "seller" ? "판매" : "낙찰"}
+                      </Badge>
+                      <p className="text-muted-foreground text-xs">
+                        {item.status === "active" ? "진행 중" : "완료"}
                       </p>
                     </div>
                   </div>
-                </Link>
-              ))}
+                  <div className="text-right">
+                    <p className="text-foreground text-lg font-bold">
+                      ₩{item.price.toLocaleString()}
+                    </p>
+                    <p
+                      className={`mt-1 text-xs font-medium ${
+                        item.status === "active"
+                          ? "text-primary"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {item.status === "active" ? "진행 중" : "완료"}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
           </div>
         )}
+
+        {/* 2) 판매중 탭: 실제 백엔드 데이터(sellingProducts) 사용 */}
+        {activeTab === "selling" && (
+          <div className="space-y-3">
+            {sellingProducts.length === 0 && (
+              <div className="py-16 text-center">
+                <p className="text-muted-foreground mb-4">
+                  현재 판매 중인 상품이 없습니다.
+                </p>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="rounded-lg bg-transparent"
+                >
+                  <Link href="/products/create">상품 등록하러가기</Link>
+                </Button>
+              </div>
+            )}
+
+            {sellingProducts.map((product) => (
+              <Link key={product.id} href={`/products/${product.id}`}>
+                <div className="border-border hover:bg-muted flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors">
+                  <div className="flex-1">
+                    {/* 상품 이름 */}
+                    <p className="text-foreground font-medium">
+                      {product.name}
+                    </p>
+
+                    <div className="mt-2 flex items-center gap-2">
+                      <Badge variant="default" className="text-xs">
+                        판매
+                      </Badge>
+                      <p className="text-muted-foreground text-xs">
+                        {product.productStatus ?? "진행 중"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    {/* 입찰가 있으면 bidPrice, 없으면 시작가(startPrice) */}
+                    <p className="text-foreground text-lg font-bold">
+                      ₩{(product.bidPrice ?? product.startPrice).toLocaleString()}
+                    </p>
+                    <p className="text-primary mt-1 text-xs font-medium">
+                      진행중
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+
 
         {/* Watchlist Tab */}
         {activeTab === "watchlist" && (
           <div className="py-16 text-center">
-            <p className="text-muted-foreground mb-4">관심상품이 없습니다.</p>
+            <p className="text-muted-foreground mb-4">관심 상품이 없습니다.</p>
             <Button
               asChild
               variant="outline"

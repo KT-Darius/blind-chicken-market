@@ -5,6 +5,25 @@ import { Product } from "@/types";
 import { AlarmClock } from "lucide-react";
 
 export default function ProductCard({ product }: { product: Product }) {
+  // 남은 일수 계산
+  const calculateDaysLeft = () => {
+    const now = new Date();
+    const endDate = new Date(product.bidEndDate);
+    const diffTime = endDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) return "경매 종료";
+    if (diffDays === 0) return "오늘 마감";
+    return `${diffDays}일 남음`;
+  };
+
+  // 경매 종료 여부 확인
+  const isExpired = () => {
+    const now = new Date();
+    const endDate = new Date(product.bidEndDate);
+    return endDate.getTime() - now.getTime() < 0;
+  };
+
   return (
     <Link href={`/products/${product.id}`}>
       <div className="group flex h-full cursor-pointer flex-col">
@@ -13,7 +32,9 @@ export default function ProductCard({ product }: { product: Product }) {
           <img
             src={product.imageUrl || "/placeholder.svg"}
             alt={product.name}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${
+              isExpired() ? "opacity-50 grayscale" : ""
+            }`}
           />
         </div>
 
@@ -28,7 +49,7 @@ export default function ProductCard({ product }: { product: Product }) {
               \{product.bidPrice.toLocaleString("ko-KR")}
             </p>
             <span className="text-muted-foreground flex items-center gap-1 text-xs font-medium">
-              <AlarmClock size={14} /> 데이터 준비 중...
+              <AlarmClock size={14} /> {calculateDaysLeft()}
             </span>
           </div>
         </div>
