@@ -32,21 +32,22 @@ export default function Step1UploadPhotos({
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const totalFiles = imageFiles.length + files.length;
 
-    if (totalFiles > 5) {
-      alert("사진은 최대 5개까지만 업로드할 수 있습니다.");
+    if (imageFiles.length >= 1) {
+      alert("사진은 1개만 업로드할 수 있습니다.");
       e.target.value = ""; // input 리셋
       return;
     }
 
-    // 모든 파일을 한 번에 처리
-    const newFiles = [...files];
-    const newUrls = files.map((file) => URL.createObjectURL(file));
+    // 첫 번째 파일만 처리
+    const file = files[0];
+    if (!file) return;
 
-    // 상태 업데이트를 한 번에
-    setImageFiles((prevFiles) => [...prevFiles, ...newFiles]);
-    setUploadedImages((prevImages) => [...prevImages, ...newUrls]);
+    const newUrl = URL.createObjectURL(file);
+
+    // 상태 업데이트
+    setImageFiles([file]);
+    setUploadedImages([newUrl]);
 
     // input 값 리셋 (같은 파일 재선택 가능하도록)
     e.target.value = "";
@@ -62,15 +63,13 @@ export default function Step1UploadPhotos({
     setImageFiles((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
 
-  const remainingUploads = 5 - imageFiles.length;
+  const remainingUploads = 1 - imageFiles.length;
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-foreground mb-2 text-2xl font-bold">사진 업로드</h2>
-        <p className="text-muted-foreground">
-          최대 5장까지 업로드 가능합니다. 첫 번째 사진이 대표 사진이 됩니다.
-        </p>
+        <p className="text-muted-foreground">상품 사진 1장을 업로드해주세요.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
@@ -83,11 +82,10 @@ export default function Step1UploadPhotos({
             <span className="text-muted-foreground text-xs">최대 5MB</span>
             <input
               type="file"
-              multiple
               accept="image/*"
               onChange={handleImageUpload}
               className="hidden"
-              disabled={imageFiles.length >= 5}
+              disabled={imageFiles.length >= 1}
             />
           </label>
         )}
@@ -105,17 +103,12 @@ export default function Step1UploadPhotos({
             >
               ✕
             </button>
-            {idx === 0 && (
-              <div className="bg-primary text-primary-foreground absolute top-2 left-2 rounded px-2 py-1 text-xs font-medium">
-                대표
-              </div>
-            )}
           </div>
         ))}
       </div>
 
       <p className="text-muted-foreground text-xs">
-        {imageFiles.length}/5 장 업로드됨
+        {imageFiles.length}/1 장 업로드됨
       </p>
     </div>
   );

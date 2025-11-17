@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import ProductCard from "@/components/product/ProductCard";
+import ProductCardSkeleton from "@/components/product/ProductCardSkeleton";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/user/useAuth";
 import { ProductListResponse, Product } from "@/types";
@@ -109,7 +110,11 @@ export default function Home() {
           </div>
 
           {loading ? (
-            <p>Loading...</p>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <ProductCardSkeleton key={index} />
+              ))}
+            </div>
           ) : filteredProducts.length === 0 ? (
             <div className="py-12 text-center">
               <p className="text-muted-foreground text-lg">

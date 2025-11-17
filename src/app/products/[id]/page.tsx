@@ -10,6 +10,7 @@ import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { useAuth } from "@/hooks/user/useAuth";
+import ProductDetailSkeleton from "@/components/product/ProductDetailSkeleton";
 
 import { PRODUCT_CATEGORIES, PRODUCT_STATUS } from "@/lib/constants";
 
@@ -133,13 +134,16 @@ export default function ProductDetail({
     fetchProduct();
   }, [productId]);
 
-  // 남은 시간 계산
-  const calculateTimeLeft = () => {
-    if (!product) return "";
+  // 경매 시간 정보 계산 (남은 시간 및 종료 여부)
+  const getTimeDiff = () => {
+    if (!product) return 0;
     const now = new Date();
     const endDate = new Date(product.bidEndDate);
-    const diffTime = endDate.getTime() - now.getTime();
+    return endDate.getTime() - now.getTime();
+  };
 
+  const calculateTimeLeft = () => {
+    const diffTime = getTimeDiff();
     if (diffTime < 0) return "경매 종료";
 
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -151,6 +155,10 @@ export default function ProductDetail({
     if (diffDays > 0) return `${diffDays}일 ${diffHours}시간`;
     if (diffHours > 0) return `${diffHours}시간 ${diffMinutes}분`;
     return `${diffMinutes}분`;
+  };
+
+  const isAuctionEnded = () => {
+    return getTimeDiff() < 0;
   };
 
   // 상품 상태 한글 변환
@@ -182,15 +190,7 @@ export default function ProductDetail({
   };
 
   if (isLoading) {
-    return (
-      <main className="bg-background min-h-screen py-8 md:py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-center py-20">
-            <p className="text-muted-foreground">로딩 중...</p>
-          </div>
-        </div>
-      </main>
-    );
+    return <ProductDetailSkeleton />;
   }
 
   if (error || !product) {
@@ -298,8 +298,15 @@ export default function ProductDetail({
                   onClick={() => setShowBidForm(true)}
                   size="lg"
                   className="w-full rounded-lg"
+                  disabled={
+                    user?.email === product.user.email || isAuctionEnded()
+                  }
                 >
-                  입찰하기
+                  {user?.email === product.user.email
+                    ? "본인 상품입니다"
+                    : isAuctionEnded()
+                      ? "경매 종료"
+                      : "입찰하기"}
                 </Button>
                 <Button
                   onClick={() => setIsWatchlisted(!isWatchlisted)}
