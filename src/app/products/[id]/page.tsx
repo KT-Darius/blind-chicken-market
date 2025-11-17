@@ -33,6 +33,7 @@ export default function ProductDetail({
   const [isWatchlisted, setIsWatchlisted] = useState(false);
   const [productId, setProductId] = useState<string>("");
   const [priceKey, setPriceKey] = useState(0);
+  const [showAllBids, setShowAllBids] = useState(false);
 
   useEffect(() => {
     const initializeParams = async () => {
@@ -200,7 +201,7 @@ export default function ProductDetail({
             href="/"
             className="text-muted-foreground hover:text-foreground mb-8 inline-flex items-center gap-2 text-sm transition-colors"
           >
-            ← 경매로 돌아가기
+            ← 홈으로 돌아가기
           </Link>
           <p className="text-foreground text-center text-xl">
             {error || "상품을 찾을 수 없습니다."}
@@ -219,7 +220,7 @@ export default function ProductDetail({
           href="/"
           className="text-muted-foreground hover:text-foreground mb-8 inline-flex items-center gap-2 text-sm transition-colors"
         >
-          ← 경매로 돌아가기
+          ← 홈으로 돌아가기
         </Link>
 
         <div className="grid grid-cols-1 gap-8 md:gap-12 lg:grid-cols-3">
@@ -348,63 +349,74 @@ export default function ProductDetail({
                 </div>
               </div>
             )}
+
+            {/* Bid History */}
+            <div className="border-border space-y-4 border-t pt-6">
+              <h3 className="text-foreground text-lg font-bold">입찰 기록</h3>
+              <div className="space-y-2">
+                <AnimatePresence mode="popLayout">
+                  {product.productBids && product.productBids.length > 0 ? (
+                    product.productBids
+                      .sort(
+                        (a, b) =>
+                          new Date(b.bidTime).getTime() -
+                          new Date(a.bidTime).getTime(),
+                      )
+                      .slice(0, showAllBids ? product.productBids.length : 1)
+                      .map((bid, index) => (
+                        <motion.div
+                          key={bid.productBidId}
+                          initial={{ opacity: 0, x: -50 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          transition={{ duration: 0.5 }}
+                          className={`bg-muted border-border flex items-center justify-between rounded-lg border p-3 text-sm ${
+                            index === 0 ? "border-green-300 bg-green-50" : ""
+                          }`}
+                        >
+                          <div className="flex-1">
+                            <p className="text-foreground font-semibold">
+                              ₩{bid.price.toLocaleString()}
+                            </p>
+                            <p className="text-muted-foreground text-xs">
+                              {new Date(bid.bidTime).toLocaleString("ko-KR")}
+                            </p>
+                          </div>
+                          <span className="text-muted-foreground ml-2 text-xs">
+                            {bid.bidderNickname}
+                          </span>
+                        </motion.div>
+                      ))
+                  ) : (
+                    <p className="text-muted-foreground text-sm">
+                      아직 입찰 기록이 없습니다.
+                    </p>
+                  )}
+                </AnimatePresence>
+                {product.productBids && product.productBids.length > 1 && (
+                  <Button
+                    onClick={() => setShowAllBids(!showAllBids)}
+                    variant="ghost"
+                    size="sm"
+                    className="w-full"
+                  >
+                    {showAllBids
+                      ? "접기"
+                      : `더보기 (${product.productBids.length - 1}개)`}
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Description & Bid History */}
-        <div className="mt-12 grid grid-cols-1 gap-8 md:gap-12 lg:grid-cols-3">
-          {/* Description */}
-          <div className="space-y-4 lg:col-span-2">
+        {/* Description */}
+        <div className="mt-12 grid grid-cols-1 gap-8 md:gap-12">
+          <div className="space-y-4">
             <h2 className="text-foreground text-2xl font-bold">상세 설명</h2>
             <p className="text-foreground leading-relaxed">
               {product.description}
             </p>
-          </div>
-
-          {/* Bid History */}
-          <div className="space-y-4">
-            <h2 className="text-foreground text-2xl font-bold">입찰 기록</h2>
-            <div className="max-h-80 space-y-2 overflow-y-auto">
-              <AnimatePresence mode="popLayout">
-                {product.productBids && product.productBids.length > 0 ? (
-                  product.productBids
-                    .sort(
-                      (a, b) =>
-                        new Date(b.bidTime).getTime() -
-                        new Date(a.bidTime).getTime(),
-                    )
-                    .slice(0, 5)
-                    .map((bid, index) => (
-                      <motion.div
-                        key={bid.productBidId}
-                        initial={{ opacity: 0, x: -50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.5 }}
-                        className={`bg-muted border-border flex items-center justify-between rounded-lg border p-3 text-sm ${
-                          index === 0 ? "border-green-300 bg-green-50" : ""
-                        }`}
-                      >
-                        <div className="flex-1">
-                          <p className="text-foreground font-semibold">
-                            ₩{bid.price.toLocaleString()}
-                          </p>
-                          <p className="text-muted-foreground text-xs">
-                            {new Date(bid.bidTime).toLocaleString("ko-KR")}
-                          </p>
-                        </div>
-                        <span className="text-muted-foreground ml-2 text-xs">
-                          {bid.bidderNickname}
-                        </span>
-                      </motion.div>
-                    ))
-                ) : (
-                  <p className="text-muted-foreground text-sm">
-                    아직 입찰 기록이 없습니다.
-                  </p>
-                )}
-              </AnimatePresence>
-            </div>
           </div>
         </div>
       </div>
