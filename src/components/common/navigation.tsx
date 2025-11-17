@@ -19,6 +19,9 @@ export default function Navigation() {
     e.preventDefault();
     if (searchQuery.trim()) {
       router.push(`/?search=${encodeURIComponent(searchQuery)}`);
+    } else {
+      router.push("/");
+      setSearchQuery("");
     }
   };
 

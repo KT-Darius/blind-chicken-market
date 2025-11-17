@@ -18,7 +18,6 @@ import { Client } from "@stomp/stompjs";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-
 export default function ProductDetail({
   params,
 }: {
@@ -43,11 +42,10 @@ export default function ProductDetail({
 
     initializeParams();
 
-
     return () => {
       clientRef.current?.deactivate();
       console.log("WebSocket disconnected");
-    }
+    };
   }, [params]);
 
   useEffect(() => {
@@ -55,56 +53,60 @@ export default function ProductDetail({
 
     const client = new Client({
       webSocketFactory: () => new SockJs(`${API_BASE_URL}/connect`),
-      debug: (str) => { console.log(str) },
+      debug: (str) => {
+        console.log(str);
+      },
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
-    })
+    });
 
     clientRef.current = client;
 
     clientRef.current.onConnect = () => {
       console.log("WebSocket connected");
 
-      clientRef.current?.subscribe(`/topic/products/${productId}/product-bids`, (msg) => {
-        const newBid = JSON.parse(msg.body);
-        
-        setProduct((prev) => {
-          if (!prev) return prev;
+      clientRef.current?.subscribe(
+        `/topic/products/${productId}/product-bids`,
+        (msg) => {
+          const newBid = JSON.parse(msg.body);
 
-          const updatedProduct = { ...prev };
-          updatedProduct.bidPrice = newBid.price;
-          updatedProduct.bidCount += 1;
+          setProduct((prev) => {
+            if (!prev) return prev;
 
-          // 입찰 기록에 새 입찰 추가
-          if (updatedProduct.productBids) {
-            updatedProduct.productBids = [
-              {
-                productBidId: Date.now(),
-                price: newBid.price,
-                bidTime: new Date().toISOString(),
-                bidderNickname: newBid.bidderNickname || "익명",
-              },
-              ...updatedProduct.productBids,
-            ];
-          }
+            const updatedProduct = { ...prev };
+            updatedProduct.bidPrice = newBid.price;
+            updatedProduct.bidCount += 1;
 
-          return updatedProduct;
-        });
+            // 입찰 기록에 새 입찰 추가
+            if (updatedProduct.productBids) {
+              updatedProduct.productBids = [
+                {
+                  productBidId: Date.now(),
+                  price: newBid.price,
+                  bidTime: new Date().toISOString(),
+                  bidderNickname: newBid.bidderNickname || "익명",
+                },
+                ...updatedProduct.productBids,
+              ];
+            }
 
-        // 가격 애니메이션 트리거
-        setPriceKey((prev) => prev + 1);
-      })
+            return updatedProduct;
+          });
 
-    }
+          // 가격 애니메이션 트리거
+          setPriceKey((prev) => prev + 1);
+        },
+      );
+    };
 
     clientRef.current.activate();
 
     return () => {
       clientRef.current?.deactivate();
       console.log("WebSocket disconnected");
-    }
-  }, [productId])
+    };
+  }, [productId]);
 
   useEffect(() => {
     if (!productId) return;
@@ -165,16 +167,15 @@ export default function ProductDetail({
   };
 
   const handlePlaceBid = () => {
-
     if (!bidAmount || isNaN(Number(bidAmount))) return;
-    
+
     clientRef.current?.publish({
       destination: `/publish/products/${productId}/product-bids`,
       body: JSON.stringify({
         price: Number(bidAmount),
-        email: user?.email
-      })
-    })
+        email: user?.email,
+      }),
+    });
 
     setShowBidForm(false);
   };
@@ -380,9 +381,8 @@ export default function ProductDetail({
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                         transition={{ duration: 0.5 }}
-                        className={`bg-muted border-border flex items-center justify-between rounded-lg border p-3 text-sm 
-                          ${
-                          index === 0 ? "bg-green-50 border-green-300" : ""
+                        className={`bg-muted border-border flex items-center justify-between rounded-lg border p-3 text-sm ${
+                          index === 0 ? "border-green-300 bg-green-50" : ""
                         }`}
                       >
                         <div className="flex-1">

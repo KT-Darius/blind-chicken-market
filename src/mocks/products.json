@@ -18,7 +18,7 @@
       "phoneNumber": "010-1234-5678"
     },
     "createdAt": "2025-11-10T10:30:00",
-    "bidEndDate": "2025-11-17T10:30:00",
+    "bidEndDate": "2025-11-20T10:30:00",
     "modifiedAt": "2025-11-13T15:45:00",
     "productBids": [
       {
@@ -60,7 +60,7 @@
       "phoneNumber": "010-2345-6789"
     },
     "createdAt": "2025-11-09T14:20:00",
-    "bidEndDate": "2025-11-20T10:30:00",
+    "bidEndDate": "2025-11-25T10:30:00",
     "modifiedAt": "2025-11-13T18:30:00",
     "productBids": [
       {
@@ -102,7 +102,7 @@
       "phoneNumber": "010-3456-7890"
     },
     "createdAt": "2025-11-11T09:00:00",
-    "bidEndDate": "2025-11-15T10:30:00",
+    "bidEndDate": "2025-11-30T10:30:00",
     "modifiedAt": "2025-11-13T12:00:00",
     "productBids": [
       {

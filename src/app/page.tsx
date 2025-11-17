@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import ProductCard from "@/components/product/ProductCard";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/user/useAuth";
@@ -11,14 +12,18 @@ import mockData from "@/mocks/products.json";
 
 export default function Home() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get("search") || "";
+
   const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const res = await fetch(
-          "http://localhost:8080/api/products?page=0&offset=10",
+          `${process.env.NEXT_PUBLIC_API_URL}/api/products?page=0&offset=10`,
         );
 
         if (!res.ok) {
@@ -44,6 +49,27 @@ export default function Home() {
     };
     fetchProducts();
   }, []);
+
+  // 검색 필터링
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredProducts(products);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const filtered = products.filter((product) => {
+      const matchName = product.name.toLowerCase().includes(query);
+      const matchDescription = product.description
+        .toLowerCase()
+        .includes(query);
+      const matchCategory = product.category.toLowerCase().includes(query);
+
+      return matchName || matchDescription || matchCategory;
+    });
+
+    setFilteredProducts(filtered);
+  }, [searchQuery, products]);
 
   return (
     <main className="bg-background min-h-screen">
@@ -74,17 +100,27 @@ export default function Home() {
       <section className="py-12 md:py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
-            <p className="font-bold">Hot Items🔥</p>
+            <p className="font-bold">
+              {searchQuery ? `"${searchQuery}" 검색 결과` : "Hot Items🔥"}
+            </p>
             <p className="text-muted-foreground text-sm">
-              Showing {products.length} items
+              Showing {filteredProducts.length} items
             </p>
           </div>
 
           {loading ? (
             <p>Loading...</p>
+          ) : filteredProducts.length === 0 ? (
+            <div className="py-12 text-center">
+              <p className="text-muted-foreground text-lg">
+                {searchQuery
+                  ? "검색 결과가 없습니다."
+                  : "등록된 상품이 없습니다."}
+              </p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>

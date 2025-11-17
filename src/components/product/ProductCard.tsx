@@ -13,7 +13,7 @@ export default function ProductCard({ product }: { product: Product }) {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) return "경매 종료";
-    if (diffDays === 0) return "오늘 마감";
+    if (diffDays === 0) return "오늘 마감🔥";
     return `${diffDays}일 남음`;
   };
 
@@ -21,7 +21,10 @@ export default function ProductCard({ product }: { product: Product }) {
   const isExpired = () => {
     const now = new Date();
     const endDate = new Date(product.bidEndDate);
-    return endDate.getTime() - now.getTime() < 0;
+    const diffTime = endDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // 오늘 마감이거나 미래면 흑백 처리하지 않음
+    return diffDays < 0;
   };
 
   return (
