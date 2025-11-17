@@ -1,6 +1,6 @@
 "use client";
 
-import type { Product, ProductListResponse } from "@/types";
+import type { Product } from "@/types";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -15,7 +15,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label"; 
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Star, LogOut, Edit2 } from "lucide-react";
 import axios from "axios";
@@ -39,46 +39,15 @@ type UserProfile = {
   reviews: number;
   wins: number;
   active: number;
-}
-
-const mockAuctions = [
-  {
-    id: 1,
-    title: "판매: iPhone 13",
-    status: "active",
-    price: 450000,
-    role: "seller",
-  },
-  {
-    id: 2,
-    title: "낙찰: 디자이너 시계",
-    status: "completed",
-    price: 280000,
-    role: "buyer",
-  },
-  {
-    id: 3,
-    title: "판매: 빈티지 카메라",
-    status: "active",
-    price: 180000,
-    role: "seller",
-  },
-  {
-    id: 4,
-    title: "낙찰: 게이밍 노트북",
-    status: "completed",
-    price: 620000,
-    role: "buyer",
-  },
-];
+};
 
 export default function MyPage() {
   const { updateNickname } = useAuth();
-  const router = useRouter();      
-  const [activeTab, setActiveTab] = useState("activity");
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState("selling");
   const [user, setUser] = useState<UserProfile>(mockUser);
   const [nickname, setNickname] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [sellingProducts, setSellingProducts] = useState<Product[]>([]);
 
   // 1. 화면에 진입했을때 useEffect
@@ -95,10 +64,9 @@ export default function MyPage() {
     // 🔹 1) 유저 기본 정보 가져오기
     const fetchUserAndSetNickname = async () => {
       try {
-        const response = await axios.get(
-          `${API_BASE_URL}/api/users/me`,
-          { withCredentials: true }
-        );
+        const response = await axios.get(`${API_BASE_URL}/api/users/me`, {
+          withCredentials: true,
+        });
 
         const apiUser = response.data;
 
@@ -137,7 +105,7 @@ export default function MyPage() {
       try {
         const response = await axios.get(
           `${API_BASE_URL}/api/users/me/products`,
-          { withCredentials: true }
+          { withCredentials: true },
         );
 
         const data = response.data;
@@ -145,7 +113,7 @@ export default function MyPage() {
         // 응답이 배열인지 content[]인지 모두 처리
         const products: Product[] = Array.isArray(data)
           ? data
-          : data?.content ?? [];
+          : (data?.content ?? []);
 
         setSellingProducts(products);
       } catch (error) {
@@ -156,7 +124,7 @@ export default function MyPage() {
 
     // 🔥 useEffect 실행할 때 두 개 다 호출
     fetchUserAndSetNickname();
-    fetchUserProducts(); // ← 바로 여기가 핵심!!
+    fetchUserProducts(); // ← 바로 여기가 핵심
   }, [router]);
 
   // 3. 닉네임 저장 함수
@@ -174,15 +142,13 @@ export default function MyPage() {
       };
 
       // 2. API 명세서에 맞는 PATCH 요청 보내기
-      await axios.patch(
-        `${API_BASE_URL}/api/users/me/nickname`,
-        requestData,
-        { withCredentials: true }
-      );
+      await axios.patch(`${API_BASE_URL}/api/users/me/nickname`, requestData, {
+        withCredentials: true,
+      });
 
       // 3. 저장 성공 시, 현재 페이지의 user 상태를 바로 업데이트
       alert("닉네임이 성공적으로 변경되었습니다.");
-      setUser(prevUser => ({
+      setUser((prevUser) => ({
         ...prevUser!,
         nickname: nickname,
       }));
@@ -192,10 +158,25 @@ export default function MyPage() {
 
       // 4. (중요) TODO: 모달 닫기
       // (다음 단계에서 모달을 자동으로 닫도록 처리합니다)
-
     } catch (err) {
       console.error("닉네임 수정 실패:", err);
       alert("닉네임 수정에 실패했습니다. 다시 시도해주세요.");
+    }
+  };
+
+  // 🔹 로그아웃 함수
+  const handleLogout = async () => {
+    try {
+      // 나중에 백엔드에서 로그아웃 API를 만들면
+      // 여기 안에 axios.post(...) 한 줄만 추가
+      // 예시:
+      // await axios.post(`${API_BASE_URL}/api/auth/logout`, {}, { withCredentials: true });
+
+      alert("로그아웃되었습니다.");
+      router.push("/login"); // 로그인 페이지로 이동
+    } catch (error) {
+      console.error("로그아웃 실패:", error);
+      alert("로그아웃 중 문제가 발생했습니다. 다시 시도해주세요.");
     }
   };
 
@@ -212,6 +193,15 @@ export default function MyPage() {
       />
     ));
   };
+
+  // 🔹 productStatus 값 기준으로 판매중 / 판매완료 분리
+  const sellingOngoingProducts = sellingProducts.filter(
+    (product) => product.productStatus !== "SOLD", // 판매 완료가 아닌 것들
+  );
+
+  const soldOutProducts = sellingProducts.filter(
+    (product) => product.productStatus === "SOLD", // 판매 완료된 것들
+  );
 
   return (
     <main className="bg-background min-h-screen py-8 md:py-12">
@@ -242,45 +232,45 @@ export default function MyPage() {
                   </Button>
                 </DialogTrigger>
 
-          {/* 2. 모달이 열리면 보일 내용 */}
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>프로필 수정</DialogTitle>
-              <DialogDescription>
-                새 닉네임을 입력하고 저장 버튼을 눌러주세요.
-              </DialogDescription>
-            </DialogHeader>
+                {/* 2. 모달이 열리면 보일 내용 */}
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>프로필 수정</DialogTitle>
+                    <DialogDescription>
+                      새 닉네임을 입력하고 저장 버튼을 눌러주세요.
+                    </DialogDescription>
+                  </DialogHeader>
 
-            {/* --- 닉네임 수정 폼 --- */}
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="nickname" className="text-right">
-                  새 닉네임
-                </Label>
-                <Input
-                  id="nickname"
-                  value={nickname} 
-                  onChange={(e) => setNickname(e.target.value)}
-                  className="col-span-3"
-                  placeholder="새 닉네임을 입력하세요"
-                />
-              </div>
-            </div>
-            {/* --- 폼 끝 --- */}
-            
-            <DialogFooter>
-              <Button onClick={handleSave}> {/* 👈 3. 15-A에서 만든 저장 함수와 연결 */}
-                저장하기
-              </Button>
-            </DialogFooter>
-          </DialogContent>
+                  {/* --- 닉네임 수정 폼 --- */}
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="nickname" className="text-right">
+                        새 닉네임
+                      </Label>
+                      <Input
+                        id="nickname"
+                        value={nickname}
+                        onChange={(e) => setNickname(e.target.value)}
+                        className="col-span-3"
+                        placeholder="새 닉네임을 입력하세요"
+                      />
+                    </div>
+                  </div>
+                  {/* --- 폼 끝 --- */}
+
+                  <DialogFooter>
+                    <Button onClick={handleSave}>저장하기</Button>
+                  </DialogFooter>
+                </DialogContent>
               </Dialog>
               <Button
                 variant="outline"
                 size="sm"
                 className="rounded-lg bg-transparent"
+                onClick={handleLogout} // 🔹 여기 추가
               >
                 <LogOut className="h-4 w-4" />
+                로그아웃
               </Button>
             </div>
           </div>
@@ -308,9 +298,7 @@ export default function MyPage() {
               <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
                 낙찰
               </p>
-              <p className="text-foreground text-3xl font-bold">
-                {user.wins}
-              </p>
+              <p className="text-foreground text-3xl font-bold">{user.wins}</p>
               <p className="text-muted-foreground text-xs">총 낙찰 상품</p>
             </div>
 
@@ -331,8 +319,8 @@ export default function MyPage() {
         <div className="border-border -mx-4 mb-8 border-b px-4">
           <div className="flex gap-8 overflow-x-auto">
             {[
-              { id: "activity", label: "활동" },
               { id: "selling", label: "판매 중" },
+              { id: "soldout", label: "판매 완료" },
               { id: "watchlist", label: "관심 상품" },
             ].map((tab) => (
               <button
@@ -352,54 +340,10 @@ export default function MyPage() {
 
         {/* Tab Content */}
 
-        {/* 1) 활동 탭: 기존 목업 데이터 유지 */}
-        {activeTab === "activity" && (
-          <div className="space-y-3">
-            {mockAuctions.map((item) => (
-              <Link key={item.id} href={`/product/${item.id}`}>
-                <div className="border-border hover:bg-muted flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors">
-                  <div className="flex-1">
-                    <p className="text-foreground font-medium">
-                      {item.title}
-                    </p>
-                    <div className="mt-2 flex items-center gap-2">
-                      <Badge
-                        variant={
-                          item.role === "seller" ? "default" : "secondary"
-                        }
-                        className="text-xs"
-                      >
-                        {item.role === "seller" ? "판매" : "낙찰"}
-                      </Badge>
-                      <p className="text-muted-foreground text-xs">
-                        {item.status === "active" ? "진행 중" : "완료"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-foreground text-lg font-bold">
-                      ₩{item.price.toLocaleString()}
-                    </p>
-                    <p
-                      className={`mt-1 text-xs font-medium ${
-                        item.status === "active"
-                          ? "text-primary"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {item.status === "active" ? "진행 중" : "완료"}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-
-        {/* 2) 판매중 탭: 실제 백엔드 데이터(sellingProducts) 사용 */}
+        {/* 1) 판매중 탭: 실제 백엔드 데이터(sellingProducts) 사용 */}
         {activeTab === "selling" && (
           <div className="space-y-3">
-            {sellingProducts.length === 0 && (
+            {sellingOngoingProducts.length === 0 && (
               <div className="py-16 text-center">
                 <p className="text-muted-foreground mb-4">
                   현재 판매 중인 상품이 없습니다.
@@ -409,12 +353,12 @@ export default function MyPage() {
                   variant="outline"
                   className="rounded-lg bg-transparent"
                 >
-                  <Link href="/products/create">상품 등록하러가기</Link>
+                  <Link href="/products/create">상품 등록하러 가기</Link>
                 </Button>
               </div>
             )}
 
-            {sellingProducts.map((product) => (
+            {sellingOngoingProducts.map((product) => (
               <Link key={product.id} href={`/products/${product.id}`}>
                 <div className="border-border hover:bg-muted flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors">
                   <div className="flex-1">
@@ -425,10 +369,10 @@ export default function MyPage() {
 
                     <div className="mt-2 flex items-center gap-2">
                       <Badge variant="default" className="text-xs">
-                        판매
+                        판매 중
                       </Badge>
                       <p className="text-muted-foreground text-xs">
-                        {product.productStatus ?? "진행 중"}
+                        상태: {product.productStatus ?? "진행 중"}
                       </p>
                     </div>
                   </div>
@@ -436,10 +380,13 @@ export default function MyPage() {
                   <div className="text-right">
                     {/* 입찰가 있으면 bidPrice, 없으면 시작가(startPrice) */}
                     <p className="text-foreground text-lg font-bold">
-                      ₩{(product.bidPrice ?? product.startPrice).toLocaleString()}
+                      ₩
+                      {(
+                        product.bidPrice ?? product.startPrice
+                      ).toLocaleString()}
                     </p>
                     <p className="text-primary mt-1 text-xs font-medium">
-                      진행중
+                      진행 중
                     </p>
                   </div>
                 </div>
@@ -448,7 +395,59 @@ export default function MyPage() {
           </div>
         )}
 
+        {/* 2) 판매 완료 탭: soldOutProducts 사용 */}
+        {activeTab === "soldout" && (
+          <div className="space-y-3">
+            {soldOutProducts.length === 0 && (
+              <div className="py-16 text-center">
+                <p className="text-muted-foreground mb-4">
+                  판매 완료된 제품이 없습니다.
+                </p>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="rounded-lg bg-transparent"
+                >
+                  <Link href="/products/create">상품 등록하러 가기</Link>
+                </Button>
+              </div>
+            )}
 
+            {soldOutProducts.map((product) => (
+              <Link key={product.id} href={`/products/${product.id}`}>
+                <div className="border-border hover:bg-muted flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors">
+                  <div className="flex-1">
+                    {/* 상품 이름 */}
+                    <p className="text-foreground font-medium">
+                      {product.name}
+                    </p>
+
+                    <div className="mt-2 flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        판매 완료
+                      </Badge>
+                      <p className="text-muted-foreground text-xs">
+                        상태: {product.productStatus ?? "판매 완료"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <p className="text-foreground text-lg font-bold">
+                      ₩
+                      {(
+                        product.bidPrice ?? product.startPrice
+                      ).toLocaleString()}
+                    </p>
+                    <p className="text-muted-foreground mt-1 text-xs font-medium">
+                      종료
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
 
         {/* Watchlist Tab */}
         {activeTab === "watchlist" && (
