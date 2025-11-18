@@ -1,6 +1,6 @@
 "use client";
 
-import type { Product, WinnerDetails } from "@/types";
+import type { MypageProductBid, Product, ProductBid, WinnerDetails } from "@/types";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -52,6 +52,7 @@ export default function MyPage() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sellingProducts, setSellingProducts] = useState<Product[]>([]);
+  const [purchaseOngoingProducts, setPurchaseOngoingProducts] = useState<MypageProductBid[]>([]);
   const [purchasedProducts, setPurchasedProducts] = useState<WinnerDetails[]>([]);
 
     // 1. 화면에 진입했을때 useEffect
@@ -73,10 +74,11 @@ export default function MyPage() {
           });
 
           const apiUser = response.data;
-          const winners = apiUser.winners?? [];
-          console.log("Fetched user info:", apiUser);
+
+          console.log("API에서 가져온 사용자 정보:", apiUser);
           setSellingProducts(apiUser.products ?? []); // 초기화
-          setPurchasedProducts(winners ?? []); // 초기화
+          setPurchasedProducts(apiUser.winners ?? []); // 초기화
+          setPurchaseOngoingProducts(apiUser.productBids ?? []); // 초기화
 
           const fetchedUser: UserProfile = {
             nickname: apiUser.nickname ?? mockUser.nickname,
@@ -246,14 +248,14 @@ export default function MyPage() {
   // 6. 백엔드 api주소 변경 확인
   // 7. postman으로 api작동 확인
   // 8. 디버깅 또는 오류 수정
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }).map((_, i) => (
-      <Star
-        key={i}
-        className={`h-4 w-4 ${i < Math.floor(rating) ? "fill-foreground text-foreground" : "text-border"}`}
-      />
-    ));
-  };
+  // const renderStars = (rating: number) => {
+  //   return Array.from({ length: 5 }).map((_, i) => (
+  //     <Star
+  //       key={i}
+  //       className={`h-4 w-4 ${i < Math.floor(rating) ? "fill-foreground text-foreground" : "text-border"}`}
+  //     />
+  //   ));
+  // };
 
   // 🔹 productStatus 값 기준으로 판매중 / 판매완료 분리
   const sellingOngoingProducts = sellingProducts.filter(
@@ -269,7 +271,7 @@ export default function MyPage() {
     if (!status) return "";
 
     // 백엔드에서 "good", "Good", "GOOD" 섞여 올 수 있으니까 대문자로 통일
-    // yoojin: GOOD, good, Good 섞여서 나올 일 음슴, 2525-11-18
+    // yoojin: GOOD, good, Good 섞여서 나오지 않음, 2525-11-18
     const upper = status.toUpperCase();
 
     // constants.ts 에서 가져온 매핑 테이블에서 value 비교
@@ -281,13 +283,13 @@ export default function MyPage() {
 
 
   // 🔹 productStatus 값 기준으로 구매 중 / 구매 완료 분리 
-  const purchasingOngoingProducts = purchasedProducts.filter(
-    (product) => product.productStatus !== "SOLD", // 진행 중인 구매(입찰 중)
-  );
+  // const purchasingOngoingProducts = purchasedProducts.filter(
+  //   (product) => product.productStatus !== "SOLD", // 진행 중인 구매(입찰 중)
+  // );
 
-  const purchasingCompletedProducts = purchasedProducts.filter(
-    (product) => product.productStatus === "SOLD", // 구매 완료된 것들
-  );
+  // const purchasingCompletedProducts = purchasedProducts.filter(
+  //   (product) => product.productStatus === "SOLD", // 구매 완료된 것들
+  // );
 
 
   return (
@@ -415,7 +417,7 @@ export default function MyPage() {
               <div>
                 <p className="text-muted-foreground">전체</p>
                 <p className="mt-1 text-foreground text-xl font-semibold">
-                  {purchasedProducts.length + purchasingOngoingProducts.length}
+                  {purchasedProducts.length + purchaseOngoingProducts.length}
                 </p>
               </div>
 
@@ -423,7 +425,7 @@ export default function MyPage() {
               <div className="border-l border-border">
                 <p className="text-muted-foreground">입찰 중</p>
                 <p className="mt-1 text-foreground text-xl font-semibold">
-                  {purchasingOngoingProducts.length}
+                  {purchaseOngoingProducts.length}
                 </p>
               </div>
 
@@ -443,7 +445,7 @@ export default function MyPage() {
               입찰 중
             </h3>
             <div className="space-y-3">
-              {purchasingOngoingProducts.length === 0 && (
+              {purchaseOngoingProducts.length === 0 && (
                 <div className="py-8 text-center">
                   <p className="text-muted-foreground mb-4">
                     현재 구매 중인 상품이 없습니다.
@@ -458,21 +460,21 @@ export default function MyPage() {
                 </div>
               )}
 
-              {purchasingOngoingProducts.map((product) => (
-                <Link key={product.id} href={`/products/${product.id}`}>
+              {purchaseOngoingProducts.map((product) => (
+                <Link key={product.productId} href={`/products/${product.productId}`}>
                   <div className="border-border hover:bg-muted flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors">
                     <div className="flex-1">
                       {/* 상품 이름 */}
                       <p className="text-foreground font-medium">
-                        {product.name}
+                        {product.productName}
                       </p>
 
                       <div className="mt-2 flex items-center gap-2">
                         <Badge variant="default" className="text-xs">
-                          구매 진행 중
+                          진행 중
                         </Badge>
                         <p className="text-muted-foreground text-xs">
-                            상태: {getProductStatusLabel(product.productStatus)}
+                            내 입찰 횟수: {product.bidCount}
                         </p>
                       </div>
                     </div>
@@ -481,9 +483,7 @@ export default function MyPage() {
                       {/* 입찰가 있으면 bidPrice, 없으면 시작가(startPrice) */}
                       <p className="text-foreground text-lg font-bold">
                         ₩
-                        {(
-                          product.bidPrice ?? product.startPrice
-                        ).toLocaleString()}
+                        {product.price.toLocaleString()}
                       </p>
                       <p className="text-primary mt-1 text-xs font-medium">
                         진행 중
@@ -529,7 +529,7 @@ export default function MyPage() {
                           구매 완료
                         </Badge>
                         <p className="text-muted-foreground text-xs">
-                          상태: {getProductStatusLabel(product.productStatus.toString())}
+                          상태: {getProductStatusLabel(product.productStatus)}
                         </p>
                       </div>
                     </div>

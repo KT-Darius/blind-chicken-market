@@ -67,7 +67,16 @@ export interface WinnerDetails {
   bidPrice: number;
   productId: string;
   productName: string;
-  productStatus: number;
+  productStatus: string;
+}
+
+export interface MypageProductBid {
+  productId: number;
+  productName: string;
+  price: number;
+  bidderNickname: string;
+  bidTime: string;
+  bidCount: number;
 }
 
 export interface ProductBid {
