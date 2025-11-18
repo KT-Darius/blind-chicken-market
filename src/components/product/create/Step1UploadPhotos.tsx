@@ -3,7 +3,6 @@
 import { Upload } from "lucide-react";
 import { useEffect } from "react";
 
-// Props 타입
 interface Step1UploadPhotosProps {
   uploadedImages: string[];
   setUploadedImages: React.Dispatch<React.SetStateAction<string[]>>;
@@ -11,17 +10,36 @@ interface Step1UploadPhotosProps {
   setImageFiles: React.Dispatch<React.SetStateAction<File[]>>;
 }
 
+// 랜덤 6글자 (영문 대/소문자 + 숫자)
+const generateRandomId = (length = 6) => {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    const idx = Math.floor(Math.random() * chars.length);
+    result += chars[idx];
+  }
+  return result;
+};
+
+// 파일명/확장자 분리
+const getFileNameAndExt = (fileName: string) => {
+  const lastDot = fileName.lastIndexOf(".");
+  if (lastDot === -1) {
+    return { name: fileName, ext: "" };
+  }
+  const name = fileName.slice(0, lastDot);
+  const ext = fileName.slice(lastDot + 1); // "jpg", "png" 등
+  return { name, ext };
+};
+
 export default function Step1UploadPhotos({
   uploadedImages,
   setUploadedImages,
   imageFiles,
   setImageFiles,
 }: Step1UploadPhotosProps) {
-  // '이전' 버튼으로 돌아왔을 때 Blob URL을 재생성하는 로직
   useEffect(() => {
-    // File 객체는 있는데, Blob URL(미리보기)이 부족하면 재생성
     if (imageFiles.length > uploadedImages.length) {
-      // 기존 URL은 유지하고, 부족한 것만 추가
       const missingCount = imageFiles.length - uploadedImages.length;
       const newUrls = imageFiles
         .slice(-missingCount)
@@ -35,30 +53,39 @@ export default function Step1UploadPhotos({
 
     if (imageFiles.length >= 1) {
       alert("사진은 1개만 업로드할 수 있습니다.");
-      e.target.value = ""; // input 리셋
+      e.target.value = "";
       return;
     }
 
-    // 첫 번째 파일만 처리
     const file = files[0];
     if (!file) return;
 
-    const newUrl = URL.createObjectURL(file);
+    // 🔹 새 파일 이름 생성 로직
+    const { name: originalName, ext } = getFileNameAndExt(file.name);
+    const randomId = generateRandomId(6); // 영문+숫자 6글자
+    const safeExt = ext || file.type.split("/")[1] || "img";
 
-    // 상태 업데이트
-    setImageFiles([file]);
+    // 예: originalName_ext_random6.ext
+    const newFileName = `${originalName}_${safeExt}_${randomId}.${safeExt}`;
+
+    // 🔹 이름만 바꾼 새 File 객체 생성
+    const renamedFile = new File([file], newFileName, { type: file.type });
+
+    console.log("original:", file.name, "=> renamed:", renamedFile.name);
+
+    const newUrl = URL.createObjectURL(renamedFile);
+
+    setImageFiles([renamedFile]);
     setUploadedImages([newUrl]);
 
-    // input 값 리셋 (같은 파일 재선택 가능하도록)
     e.target.value = "";
   };
 
   const removeImage = (indexToRemove: number) => {
     const urlToRemove = uploadedImages[indexToRemove];
     if (urlToRemove) {
-      URL.revokeObjectURL(urlToRemove); // 개별 삭제 시 메모리 해제
+      URL.revokeObjectURL(urlToRemove);
     }
-    // 두 상태에서 모두 제거
     setUploadedImages((prev) => prev.filter((_, i) => i !== indexToRemove));
     setImageFiles((prev) => prev.filter((_, i) => i !== indexToRemove));
   };
