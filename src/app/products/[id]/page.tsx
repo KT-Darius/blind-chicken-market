@@ -33,6 +33,7 @@ export default function ProductDetail({
   const [productId, setProductId] = useState<string>("");
   const [priceKey, setPriceKey] = useState(0);
   const [showAllBids, setShowAllBids] = useState(false);
+  const [bidError, setBidError] = useState<string | null>(null);
 
   useEffect(() => {
     const initializeParams = async () => {
@@ -94,6 +95,10 @@ export default function ProductDetail({
             return updatedProduct;
           });
 
+          // 입찰가 입력값을 새로운 최소 입찰가로 업데이트
+          const minIncrement = getMinBidIncrement(newBid.price);
+          setBidAmount((newBid.price + minIncrement).toString());
+
           // 가격 애니메이션 트리거
           setPriceKey((prev) => prev + 1);
         },
@@ -118,8 +123,9 @@ export default function ProductDetail({
           `${API_BASE_URL}/api/products/${productId}`,
         );
         setProduct(response.data);
-        // 다음 최소 입찰가 설정 (현재가 + 10,000원)
-        setBidAmount((response.data.bidPrice + 10000).toString());
+        // 다음 최소 입찰가 설정 (현재가 + 최소 입찰 단위)
+        const minIncrement = getMinBidIncrement(response.data.bidPrice);
+        setBidAmount((response.data.bidPrice + minIncrement).toString());
         setError(null);
       } catch (err) {
         console.error("상품 조회 실패:", err);
@@ -173,13 +179,45 @@ export default function ProductDetail({
     return categoryItem ? categoryItem.label : category;
   };
 
+  // 금액 구간별 최소 입찰 단위 계산
+  const getMinBidIncrement = (currentPrice: number) => {
+    const bidIncrements = [
+      { threshold: 100000, increment: 1000 }, // 10만원 미만: 1천원
+      { threshold: 1000000, increment: 5000 }, // 100만원 미만: 5천원
+      { threshold: 5000000, increment: 10000 }, // 500만원 미만: 1만원
+      { threshold: 10000000, increment: 50000 }, // 1천만원 미만: 5만원
+      { threshold: 50000000, increment: 100000 }, // 5천만원 미만: 10만원
+      { threshold: 100000000, increment: 500000 }, // 1억원 미만: 50만원
+      { threshold: Infinity, increment: 1000000 }, // 1억원 이상: 100만원
+    ];
+
+    const tier = bidIncrements.find(
+      ({ threshold }) => currentPrice < threshold,
+    );
+    return tier ? tier.increment : 1000000;
+  };
+
   const handlePlaceBid = () => {
     if (!bidAmount || isNaN(Number(bidAmount))) return;
+
+    const bidValue = Number(bidAmount);
+    const minIncrement = product ? getMinBidIncrement(product.bidPrice) : 1000;
+    const minBidValue = product ? product.bidPrice + minIncrement : 0;
+
+    // 최소 입찰가 검증
+    if (bidValue < minBidValue) {
+      setBidError(
+        `최소 입찰가는 ₩${minBidValue.toLocaleString()}입니다. (최소 입찰 단위: ₩${minIncrement.toLocaleString()})`,
+      );
+      return;
+    }
+
+    setBidError(null);
 
     clientRef.current?.publish({
       destination: `/publish/products/${productId}/product-bids`,
       body: JSON.stringify({
-        price: Number(bidAmount),
+        price: bidValue,
         email: user?.email,
       }),
     });
@@ -209,7 +247,8 @@ export default function ProductDetail({
     );
   }
 
-  const minBid = product.bidPrice + 10000;
+  const minBidIncrement = getMinBidIncrement(product.bidPrice);
+  const minBid = product.bidPrice + minBidIncrement;
 
   return (
     <main className="bg-background min-h-screen py-8 md:py-12">
@@ -319,10 +358,18 @@ export default function ProductDetail({
                   <input
                     type="number"
                     value={bidAmount}
-                    onChange={(e) => setBidAmount(e.target.value)}
+                    onChange={(e) => {
+                      setBidAmount(e.target.value);
+                      setBidError(null);
+                    }}
                     className="bg-background border-border text-foreground focus:ring-primary placeholder:text-muted-foreground mt-2 w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none"
                     min={minBid}
                   />
+                  {bidError && (
+                    <p className="mt-2 text-xs font-medium text-red-500">
+                      {bidError}
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <Button

@@ -50,7 +50,7 @@
     "bidPrice": 375000,
     "bidCount": 8,
     "bidStatus": "ACTIVE",
-    "productStatus": "NEW",
+    "productStatus": "AVERAGE",
     "imageUrl": "/product02.jpg",
     "user": {
       "id": 2,
@@ -92,7 +92,7 @@
     "bidPrice": 160000,
     "bidCount": 5,
     "bidStatus": "ACTIVE",
-    "productStatus": "NEW",
+    "productStatus": "BAD",
     "imageUrl": "/product03.jpg",
     "user": {
       "id": 3,
@@ -218,7 +218,7 @@
     "bidPrice": 250000,
     "bidCount": 18,
     "bidStatus": "ACTIVE",
-    "productStatus": "NEW",
+    "productStatus": "AVERAGE",
     "imageUrl": "/product06.jpg",
     "user": {
       "id": 6,
