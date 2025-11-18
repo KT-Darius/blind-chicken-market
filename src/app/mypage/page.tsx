@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Star, LogOut, Edit2 } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "@/hooks/user/useAuth";
+import { PRODUCT_STATUS } from "@/lib/constants";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -30,6 +31,7 @@ const mockUser = {
   reviews: 127,
   wins: 23,
   active: 5,
+  phoneNumber: "010-0000-0000",
 };
 
 type UserProfile = {
@@ -39,130 +41,197 @@ type UserProfile = {
   reviews: number;
   wins: number;
   active: number;
+  phoneNumber: string;
 };
 
 export default function MyPage() {
   const { updateNickname } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("selling");
   const [user, setUser] = useState<UserProfile>(mockUser);
   const [nickname, setNickname] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sellingProducts, setSellingProducts] = useState<Product[]>([]);
+  const [purchasedProducts, setPurchasedProducts] = useState<Product[]>([]);
 
-  // 1. 화면에 진입했을때 useEffect
-  useEffect(() => {
-    // createdAt(예: 2025-11-14T15:16:03.104117)을
-    // "2025년 11월 가입" 형태로 바꾸는 함수
-    const formatJoinDate = (isoString: string) => {
-      const date = new Date(isoString);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1; // 0부터 시작하니까 +1
-      return `${year}년 ${month}월 가입`;
-    };
-
-    // 🔹 1) 유저 기본 정보 가져오기
-    const fetchUserAndSetNickname = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/api/users/me`, {
-          withCredentials: true,
-        });
-
-        const apiUser = response.data;
-
-        const fetchedUser: UserProfile = {
-          nickname: apiUser.nickname ?? mockUser.nickname,
-          joinDate: apiUser.createdAt
-            ? formatJoinDate(apiUser.createdAt)
-            : mockUser.joinDate,
-          rating: apiUser.rating ?? mockUser.rating,
-          reviews: apiUser.reviews ?? mockUser.reviews,
-          wins: apiUser.wins ?? mockUser.wins,
-          active: apiUser.active ?? mockUser.active,
-        };
-
-        setUser(fetchedUser);
-        setNickname(fetchedUser.nickname);
-      } catch (error) {
-        if (axios.isAxiosError(error)) {
-          const status = error.response?.status;
-          if (status === 401 || status === 403) {
-            console.warn("인증 오류로 401/403 발생:", error);
-            alert("로그인이 필요합니다. 로그인 페이지로 이동합니다.");
-            router.push("/login");
-            return;
-          }
-        }
-
-        console.error("사용자 정보 가져오기 실패:", error);
-        setUser(mockUser);
-        setNickname(mockUser.nickname);
-      }
-    };
-
-    // 🔹 2) 내가 등록한 상품(판매 중 상품) 가져오기
-    const fetchUserProducts = async () => {
-      try {
-        const response = await axios.get(
-          `${API_BASE_URL}/api/users/me/products`,
-          { withCredentials: true },
-        );
-
-        const data = response.data;
-
-        // 응답이 배열인지 content[]인지 모두 처리
-        const products: Product[] = Array.isArray(data)
-          ? data
-          : (data?.content ?? []);
-
-        setSellingProducts(products);
-      } catch (error) {
-        console.error("판매중 상품 조회 실패:", error);
-        setSellingProducts([]);
-      }
-    };
-
-    // 🔥 useEffect 실행할 때 두 개 다 호출
-    fetchUserAndSetNickname();
-    fetchUserProducts(); // ← 바로 여기가 핵심
-  }, [router]);
-
-  // 3. 닉네임 저장 함수
-  const handleSave = async () => {
-    // 닉네임이 비어있으면 저장하지 않음
-    if (!nickname.trim()) {
-      alert("닉네임을 입력해주세요.");
-      return;
-    }
-
-    try {
-      // 1. 서버에 보낼 데이터
-      const requestData = {
-        nickname: nickname,
+    // 1. 화면에 진입했을때 useEffect
+    useEffect(() => {
+      // createdAt(예: 2025-11-14T15:16:03.104117)을
+      // "2025년 11월 가입" 형태로 바꾸는 함수
+      const formatJoinDate = (isoString: string) => {
+        const date = new Date(isoString);
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1; // 0부터 시작하니까 +1
+        return `${year}년 ${month}월 가입`;
       };
 
-      // 2. API 명세서에 맞는 PATCH 요청 보내기
-      await axios.patch(`${API_BASE_URL}/api/users/me/nickname`, requestData, {
-        withCredentials: true,
-      });
+      // 🔹 1) 유저 기본 정보 가져오기
+      const fetchUserAndSetNickname = async () => {
+        try {
+          const response = await axios.get(`${API_BASE_URL}/api/users/me`, {
+            withCredentials: true,
+          });
 
-      // 3. 저장 성공 시, 현재 페이지의 user 상태를 바로 업데이트
-      alert("닉네임이 성공적으로 변경되었습니다.");
-      setUser((prevUser) => ({
-        ...prevUser!,
-        nickname: nickname,
-      }));
-      updateNickname(nickname);
+          const apiUser = response.data;
+          console.log("🔍 /api/users/me 응답:", apiUser);
 
-      setIsModalOpen(false);
+          const fetchedUser: UserProfile = {
+            nickname: apiUser.nickname ?? mockUser.nickname,
+            joinDate: apiUser.createdAt
+              ? formatJoinDate(apiUser.createdAt)
+              : mockUser.joinDate,
+            rating: apiUser.rating ?? mockUser.rating,
+            reviews: apiUser.reviews ?? mockUser.reviews,
+            wins: apiUser.wins ?? mockUser.wins,
+            active: apiUser.active ?? mockUser.active,
 
-      // 4. (중요) TODO: 모달 닫기
-      // (다음 단계에서 모달을 자동으로 닫도록 처리합니다)
-    } catch (err) {
-      console.error("닉네임 수정 실패:", err);
-      alert("닉네임 수정에 실패했습니다. 다시 시도해주세요.");
-    }
-  };
+            // ✅ 전화번호: 서버에서 값이 비어 있거나(null/undefined/빈문자열) 하면 목업 값으로 대체
+            //  - 백엔드 필드명이 phoneNumber가 아니면 여기만 바꾸면 됨
+            phoneNumber:
+              apiUser.phoneNumber && String(apiUser.phoneNumber).trim() !== ""
+                ? String(apiUser.phoneNumber)
+                : mockUser.phoneNumber,
+          };
+
+          // ✅ user 상태 및 모달 입력값 동기화
+          setUser(fetchedUser);
+          setNickname(fetchedUser.nickname);
+          setPhoneNumber(fetchedUser.phoneNumber);
+        } catch (error) {
+          if (axios.isAxiosError(error)) {
+            const status = error.response?.status;
+            if (status === 401 || status === 403) {
+              console.warn("인증 오류로 401/403 발생:", error);
+              alert("로그인이 필요합니다. 로그인 페이지로 이동합니다.");
+              router.push("/login");
+              return;
+            }
+          }
+
+          console.error("사용자 정보 가져오기 실패:", error);
+          // 실패 시에도 목업 정보로 상태 세팅
+          setUser(mockUser);
+          setNickname(mockUser.nickname);
+          setPhoneNumber(mockUser.phoneNumber);
+        }
+      };
+
+      // 🔹 2) 내가 등록한 상품(판매 중 상품) 가져오기
+      const fetchUserProducts = async () => {
+        try {
+          const response = await axios.get(
+            `${API_BASE_URL}/api/users/me/products`,
+            { withCredentials: true },
+          );
+
+          const data = response.data;
+
+          // 응답이 배열인지 content[]인지 모두 처리
+          const products: Product[] = Array.isArray(data)
+            ? data
+            : (data?.content ?? []);
+
+          setSellingProducts(products);
+        } catch (error) {
+          console.error("판매중 상품 조회 실패:", error);
+          setSellingProducts([]);
+        }
+      };
+
+      // 🔹 3) 내가 구매한 상품(구매 내역) 가져오기
+      // ⚠️ 백엔드와 실제로 합의된 엔드포인트로 반드시 수정해야 합니다.
+      // 예: /api/users/me/purchases, /api/users/me/bids, /api/users/me/orders 등
+      const fetchPurchasedProducts = async () => {
+        try {
+          const response = await axios.get(
+            `${API_BASE_URL}/api/users/me/purchases`, // ✅ 나중에 백엔드에서 정해준 URL로 변경
+            { withCredentials: true },
+          );
+
+          const data = response.data;
+
+          // 응답이 배열인지 content[]인지 모두 처리
+          const products: Product[] = Array.isArray(data)
+            ? data
+            : (data?.content ?? []);
+
+          setPurchasedProducts(products);
+        } catch (error) {
+          console.error("구매 내역 조회 실패:", error);
+          setPurchasedProducts([]); // 실패 시 깔끔하게 빈 배열
+        }
+      };
+
+      // useEffect 실행할 때 세 개 다 호출
+      fetchUserAndSetNickname();
+      fetchUserProducts();
+      fetchPurchasedProducts();
+    }, [router]);
+
+
+    // 3. 프로필 저장 함수 (닉네임 + 전화번호)
+    const handleSave = async () => {
+      // 닉네임이 비어있으면 저장하지 않음
+      if (!nickname.trim()) {
+        alert("닉네임을 입력해주세요.");
+        return;
+      }
+
+      // 전화번호가 비어있으면 저장하지 않음
+      if (!phoneNumber.trim()) {
+        alert("전화번호를 입력해주세요.");
+        return;
+      }
+
+      try {
+        // 1. 서버에 보낼 데이터들
+        const nicknameRequestData = {
+          nickname: nickname,
+        };
+
+        const phoneRequestData = {
+          phoneNumber: phoneNumber,
+        };
+
+        // 2-1. 닉네임 PATCH 요청
+        await axios.patch(
+          `${API_BASE_URL}/api/users/me/nickname`,
+          nicknameRequestData,
+          {
+            withCredentials: true,
+          },
+        );
+
+        // 2-2. 전화번호 PATCH 요청
+        // ⚠️ 여기 엔드포인트 URL은 백엔드에서 정해준 것과 맞춰야 합니다.
+        // 예시로 /api/users/me/phone-number 로 작성해 둡니다.
+        await axios.patch(
+          `${API_BASE_URL}/api/users/me/phoneNumber`,
+          phoneRequestData,
+          {
+            withCredentials: true,
+          },
+        );
+
+        // 3. 저장 성공 시, 현재 페이지의 user 상태를 바로 업데이트
+        alert("프로필이 성공적으로 변경되었습니다.");
+        setUser((prevUser) => ({
+          ...prevUser!,
+          nickname: nickname,
+          phoneNumber: phoneNumber,
+        }));
+
+        // 전역 auth 컨텍스트의 닉네임도 업데이트
+        updateNickname(nickname);
+
+        // 모달 닫기
+        setIsModalOpen(false);
+      } catch (err) {
+        console.error("프로필 수정 실패:", err);
+        alert("프로필 수정에 실패했습니다. 다시 시도해주세요.");
+      }
+    };
+
 
   // 🔹 로그아웃 함수
   const handleLogout = async () => {
@@ -203,6 +272,31 @@ export default function MyPage() {
     (product) => product.productStatus === "SOLD", // 판매 완료된 것들
   );
 
+  // 🔹 상품 상태 값을 한글 라벨("좋음" 등)로 변환하는 함수
+  const getProductStatusLabel = (status?: string) => {
+    if (!status) return "";
+
+    // 백엔드에서 "good", "Good", "GOOD" 섞여 올 수 있으니까 대문자로 통일
+    const upper = status.toUpperCase();
+
+    // constants.ts 에서 가져온 매핑 테이블에서 value 비교
+    const item = PRODUCT_STATUS.find((s) => s.value === upper);
+
+    // 찾으면 label(좋음/보통/나쁨) 리턴, 못 찾으면 원래 값 그대로
+    return item ? item.label : status;
+  };
+
+
+  // 🔹 productStatus 값 기준으로 구매 중 / 구매 완료 분리 
+  const purchasingOngoingProducts = purchasedProducts.filter(
+    (product) => product.productStatus !== "SOLD", // 진행 중인 구매(입찰 중)
+  );
+
+  const purchasingCompletedProducts = purchasedProducts.filter(
+    (product) => product.productStatus === "SOLD", // 구매 완료된 것들
+  );
+
+
   return (
     <main className="bg-background min-h-screen py-8 md:py-12">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
@@ -225,7 +319,6 @@ export default function MyPage() {
                     variant="outline"
                     size="sm"
                     className="gap-2 rounded-lg bg-transparent"
-                    // onClick={handleEditProfile}은 <DialogTrigger>가 대신하므로 삭제합니다.
                   >
                     <Edit2 className="h-4 w-4" />
                     프로필 수정
@@ -237,15 +330,16 @@ export default function MyPage() {
                   <DialogHeader>
                     <DialogTitle>프로필 수정</DialogTitle>
                     <DialogDescription>
-                      새 닉네임을 입력하고 저장 버튼을 눌러주세요.
+                      새 정보를 입력하고 변경하기 버튼을 눌러주세요.
                     </DialogDescription>
                   </DialogHeader>
 
-                  {/* --- 닉네임 수정 폼 --- */}
+                  {/* --- 닉네임 + 전화번호 수정 폼 --- */}
                   <div className="grid gap-4 py-4">
+                    {/* 닉네임 입력 */}
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="nickname" className="text-right">
-                        새 닉네임
+                        닉네임
                       </Label>
                       <Input
                         id="nickname"
@@ -255,14 +349,30 @@ export default function MyPage() {
                         placeholder="새 닉네임을 입력하세요"
                       />
                     </div>
+
+                    {/* 전화번호 입력 */}
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="phoneNumber" className="text-right">
+                        전화번호
+                      </Label>
+                      <Input
+                        id="phoneNumber"
+                        type="tel"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        className="col-span-3"
+                        placeholder="예: 010-1234-5678"
+                      />
+                    </div>
                   </div>
                   {/* --- 폼 끝 --- */}
 
                   <DialogFooter>
-                    <Button onClick={handleSave}>저장하기</Button>
+                    <Button onClick={handleSave}>변경하기</Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+
               <Button
                 variant="outline"
                 size="sm"
@@ -275,24 +385,8 @@ export default function MyPage() {
             </div>
           </div>
 
-          {/* Stats Grid */}
-          <div className="mt-6 grid grid-cols-3 gap-4 md:gap-6">
-            {/* Rating */}
-            <div className="bg-card border-border space-y-2 rounded-lg border p-4">
-              <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
-                평점
-              </p>
-              <div className="flex items-center gap-2">
-                <p className="text-foreground text-3xl font-bold">
-                  {user.rating}
-                </p>
-                <div className="flex gap-1">{renderStars(user.rating)}</div>
-              </div>
-              <p className="text-muted-foreground text-xs">
-                {user.reviews}개 리뷰
-              </p>
-            </div>
-
+        {/* Stats Grid */}
+        <div className="mt-6 grid grid-cols-2 gap-4 md:gap-6">
             {/* Wins */}
             <div className="bg-card border-border space-y-2 rounded-lg border p-4">
               <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
@@ -315,162 +409,307 @@ export default function MyPage() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="border-border -mx-4 mb-8 border-b px-4">
-          <div className="flex gap-8 overflow-x-auto">
-            {[
-              { id: "selling", label: "판매 중" },
-              { id: "soldout", label: "판매 완료" },
-              { id: "watchlist", label: "관심 상품" },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`border-b-2 py-4 font-medium whitespace-nowrap transition-colors ${
-                  activeTab === tab.id
-                    ? "text-foreground border-foreground"
-                    : "text-muted-foreground hover:text-foreground border-transparent"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* 메인 섹션들 */}
 
-        {/* Tab Content */}
+        {/* 1. 구매 내역 섹션 */}
+        <section className="mb-10">
+          <h2 className="mb-4 text-lg font-semibold">구매 내역</h2>
 
-        {/* 1) 판매중 탭: 실제 백엔드 데이터(sellingProducts) 사용 */}
-        {activeTab === "selling" && (
-          <div className="space-y-3">
-            {sellingOngoingProducts.length === 0 && (
-              <div className="py-16 text-center">
-                <p className="text-muted-foreground mb-4">
-                  현재 판매 중인 상품이 없습니다.
+          {/* 상단 요약 바: 전체 | 입찰 중  종료 */}
+          <div className="mb-6 rounded-lg border border-border bg-card p-4">
+            <div className="grid grid-cols-3 text-center text-sm">
+              {/* 전체 */}
+              <div>
+                <p className="text-muted-foreground">전체</p>
+                <p className="mt-1 text-foreground text-xl font-semibold">
+                  {purchasedProducts.length}
                 </p>
-                <Button
-                  asChild
-                  variant="outline"
-                  className="rounded-lg bg-transparent"
-                >
-                  <Link href="/products/create">상품 등록하러 가기</Link>
-                </Button>
               </div>
-            )}
 
-            {sellingOngoingProducts.map((product) => (
-              <Link key={product.id} href={`/products/${product.id}`}>
-                <div className="border-border hover:bg-muted flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors">
-                  <div className="flex-1">
-                    {/* 상품 이름 */}
-                    <p className="text-foreground font-medium">
-                      {product.name}
-                    </p>
+              {/* 입찰 중 (구매 진행 중) */}
+              <div className="border-l border-border">
+                <p className="text-muted-foreground">입찰 중</p>
+                <p className="mt-1 text-foreground text-xl font-semibold">
+                  {purchasingOngoingProducts.length}
+                </p>
+              </div>
 
-                    <div className="mt-2 flex items-center gap-2">
-                      <Badge variant="default" className="text-xs">
-                        판매 중
-                      </Badge>
-                      <p className="text-muted-foreground text-xs">
-                        상태: {product.productStatus ?? "진행 중"}
+              {/* 종료 = 구매 완료 */}
+              <div>
+                <p className="text-muted-foreground">종료</p>
+                <p className="mt-1 text-foreground text-xl font-semibold">
+                  {purchasingCompletedProducts.length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* (1) 구매 중 그룹 */}
+          <div className="mb-6">
+            <h3 className="mb-3 text-sm font-medium text-muted-foreground">
+              입찰 중
+            </h3>
+            <div className="space-y-3">
+              {purchasingOngoingProducts.length === 0 && (
+                <div className="py-8 text-center">
+                  <p className="text-muted-foreground mb-4">
+                    현재 구매 중인 상품이 없습니다.
+                  </p>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="rounded-lg bg-transparent"
+                  >
+                    <Link href="/">상품 둘러보러 가기</Link>
+                  </Button>
+                </div>
+              )}
+
+              {purchasingOngoingProducts.map((product) => (
+                <Link key={product.id} href={`/products/${product.id}`}>
+                  <div className="border-border hover:bg-muted flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors">
+                    <div className="flex-1">
+                      {/* 상품 이름 */}
+                      <p className="text-foreground font-medium">
+                        {product.name}
+                      </p>
+
+                      <div className="mt-2 flex items-center gap-2">
+                        <Badge variant="default" className="text-xs">
+                          구매 진행 중
+                        </Badge>
+                        <p className="text-muted-foreground text-xs">
+                            상태: {getProductStatusLabel(product.productStatus)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      {/* 입찰가 있으면 bidPrice, 없으면 시작가(startPrice) */}
+                      <p className="text-foreground text-lg font-bold">
+                        ₩
+                        {(
+                          product.bidPrice ?? product.startPrice
+                        ).toLocaleString()}
+                      </p>
+                      <p className="text-primary mt-1 text-xs font-medium">
+                        진행 중
                       </p>
                     </div>
                   </div>
-
-                  <div className="text-right">
-                    {/* 입찰가 있으면 bidPrice, 없으면 시작가(startPrice) */}
-                    <p className="text-foreground text-lg font-bold">
-                      ₩
-                      {(
-                        product.bidPrice ?? product.startPrice
-                      ).toLocaleString()}
-                    </p>
-                    <p className="text-primary mt-1 text-xs font-medium">
-                      진행 중
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))}
+            </div>
           </div>
-        )}
 
-        {/* 2) 판매 완료 탭: soldOutProducts 사용 */}
-        {activeTab === "soldout" && (
-          <div className="space-y-3">
-            {soldOutProducts.length === 0 && (
-              <div className="py-16 text-center">
-                <p className="text-muted-foreground mb-4">
-                  판매 완료된 제품이 없습니다.
-                </p>
-                <Button
-                  asChild
-                  variant="outline"
-                  className="rounded-lg bg-transparent"
-                >
-                  <Link href="/products/create">상품 등록하러 가기</Link>
-                </Button>
-              </div>
-            )}
+          {/* (2) 구매 완료 그룹 */}
+          <div>
+            <h3 className="mb-3 text-sm font-medium text-muted-foreground">
+              구매 완료
+            </h3>
+            <div className="space-y-3">
+              {purchasingCompletedProducts.length === 0 && (
+                <div className="py-8 text-center">
+                  <p className="text-muted-foreground mb-4">
+                    구매 완료된 상품이 없습니다.
+                  </p>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="rounded-lg bg-transparent"
+                  >
+                    <Link href="/">상품 둘러보러 가기</Link>
+                  </Button>
+                </div>
+              )}
 
-            {soldOutProducts.map((product) => (
-              <Link key={product.id} href={`/products/${product.id}`}>
-                <div className="border-border hover:bg-muted flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors">
-                  <div className="flex-1">
-                    {/* 상품 이름 */}
-                    <p className="text-foreground font-medium">
-                      {product.name}
-                    </p>
+              {purchasingCompletedProducts.map((product) => (
+                <Link key={product.id} href={`/products/${product.id}`}>
+                  <div className="border-border hover:bg-muted flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors">
+                    <div className="flex-1">
+                      {/* 상품 이름 */}
+                      <p className="text-foreground font-medium">
+                        {product.name}
+                      </p>
 
-                    <div className="mt-2 flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">
-                        판매 완료
-                      </Badge>
-                      <p className="text-muted-foreground text-xs">
-                        상태: {product.productStatus ?? "판매 완료"}
+                      <div className="mt-2 flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          구매 완료
+                        </Badge>
+                        <p className="text-muted-foreground text-xs">
+                          상태: {getProductStatusLabel(product.productStatus)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <p className="text-foreground text-lg font-bold">
+                        ₩
+                        {(
+                          product.bidPrice ?? product.startPrice
+                        ).toLocaleString()}
+                      </p>
+                      <p className="text-muted-foreground mt-1 text-xs font-medium">
+                        종료
                       </p>
                     </div>
                   </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
 
-                  <div className="text-right">
-                    <p className="text-foreground text-lg font-bold">
-                      ₩
-                      {(
-                        product.bidPrice ?? product.startPrice
-                      ).toLocaleString()}
-                    </p>
-                    <p className="text-muted-foreground mt-1 text-xs font-medium">
-                      종료
-                    </p>
-                  </div>
+
+
+        {/* 2. 판매 내역 섹션 */}
+        <section className="mb-10">
+          <h2 className="mb-4 text-lg font-semibold">판매 내역</h2>
+
+          {/* 상단 요약 바: 전체 | 입찰 중  종료 */}
+          <div className="mb-6 rounded-lg border border-border bg-card p-4">
+            <div className="grid grid-cols-3 text-center text-sm">
+              {/* 전체 */}
+              <div>
+                <p className="text-muted-foreground">전체</p>
+                <p className="mt-1 text-foreground text-xl font-semibold">
+                  {sellingProducts.length}
+                </p>
+              </div>
+
+              {/* 입찰 중 (판매 진행 중) */}
+              <div className="border-l border-border">
+                <p className="text-muted-foreground">입찰 중</p>
+                <p className="mt-1 text-foreground text-xl font-semibold">
+                  {sellingOngoingProducts.length}
+                </p>
+              </div>
+
+              {/* 종료 = 판매 완료 */}
+              <div>
+                <p className="text-muted-foreground">종료</p>
+                <p className="mt-1 text-foreground text-xl font-semibold">
+                  {soldOutProducts.length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* (1) 판매 중 그룹 */}
+          <div className="mb-6">
+            <h3 className="mb-3 text-sm font-medium text-muted-foreground">
+              입찰 중
+            </h3>
+            <div className="space-y-3">
+              {sellingOngoingProducts.length === 0 && (
+                <div className="py-8 text-center">
+                  <p className="text-muted-foreground mb-4">
+                    현재 판매 중인 상품이 없습니다.
+                  </p>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="rounded-lg bg-transparent"
+                  >
+                    <Link href="/products/create">상품 등록하러 가기</Link>
+                  </Button>
                 </div>
-              </Link>
-            ))}
-          </div>
-        )}
+              )}
 
-        {/* Watchlist Tab */}
-        {activeTab === "watchlist" && (
-          <div className="py-16 text-center">
-            <p className="text-muted-foreground mb-4">관심 상품이 없습니다.</p>
-            <Button
-              asChild
-              variant="outline"
-              className="rounded-lg bg-transparent"
-            >
-              <Link href="/">둘러보기 시작</Link>
-            </Button>
-          </div>
-        )}
+              {sellingOngoingProducts.map((product) => (
+                <Link key={product.id} href={`/products/${product.id}`}>
+                  <div className="border-border hover:bg-muted flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors">
+                    <div className="flex-1">
+                      {/* 상품 이름 */}
+                      <p className="text-foreground font-medium">
+                        {product.name}
+                      </p>
 
-        <br />
-        {/* Back Link */}
-        <Link
-          href="/"
-          className="text-muted-foreground hover:text-foreground mb-8 inline-flex items-center gap-2 text-sm transition-colors"
-        >
-          ← 홈으로 돌아가기
-        </Link>
+                      <div className="mt-2 flex items-center gap-2">
+                        <Badge variant="default" className="text-xs">
+                          판매 중
+                        </Badge>
+                        <p className="text-muted-foreground text-xs">
+                          상태: {getProductStatusLabel(product.productStatus)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      {/* 입찰가 있으면 bidPrice, 없으면 시작가(startPrice) */}
+                      <p className="text-foreground text-lg font-bold">
+                        ₩
+                        {(
+                          product.bidPrice ?? product.startPrice
+                        ).toLocaleString()}
+                      </p>
+                      <p className="text-primary mt-1 text-xs font-medium">
+                        진행 중
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* (2) 판매 완료 그룹 */}
+          <div>
+            <h3 className="mb-3 text-sm font-medium text-muted-foreground">
+              판매 완료
+            </h3>
+            <div className="space-y-3">
+              {soldOutProducts.length === 0 && (
+                <div className="py-8 text-center">
+                  <p className="text-muted-foreground mb-4">
+                    판매 완료된 상품이 없습니다.
+                  </p>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="rounded-lg bg-transparent"
+                  >
+                    <Link href="/products/create">상품 등록하러 가기</Link>
+                  </Button>
+                </div>
+              )}
+
+              {soldOutProducts.map((product) => (
+                <Link key={product.id} href={`/products/${product.id}`}>
+                  <div className="border-border hover:bg-muted flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors">
+                    <div className="flex-1">
+                      {/* 상품 이름 */}
+                      <p className="text-foreground font-medium">
+                        {product.name}
+                      </p>
+
+                      <div className="mt-2 flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          판매 완료
+                        </Badge>
+                        <p className="text-muted-foreground text-xs">
+                          상태: {getProductStatusLabel(product.productStatus)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <p className="text-foreground text-lg font-bold">
+                        ₩
+                        {(
+                          product.bidPrice ?? product.startPrice
+                        ).toLocaleString()}
+                      </p>
+                      <p className="text-muted-foreground mt-1 text-xs font-medium">
+                        종료
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   );

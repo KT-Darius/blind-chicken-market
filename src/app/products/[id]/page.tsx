@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Heart } from "lucide-react";
 import { Product } from "@/types";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,7 +30,6 @@ export default function ProductDetail({
   const [error, setError] = useState<string | null>(null);
   const [bidAmount, setBidAmount] = useState("");
   const [showBidForm, setShowBidForm] = useState(false);
-  const [isWatchlisted, setIsWatchlisted] = useState(false);
   const [productId, setProductId] = useState<string>("");
   const [priceKey, setPriceKey] = useState(0);
   const [showAllBids, setShowAllBids] = useState(false);
@@ -307,17 +305,6 @@ export default function ProductDetail({
                     : isAuctionEnded()
                       ? "경매 종료"
                       : "입찰하기"}
-                </Button>
-                <Button
-                  onClick={() => setIsWatchlisted(!isWatchlisted)}
-                  variant="outline"
-                  size="lg"
-                  className="w-full rounded-lg"
-                >
-                  <Heart
-                    className={`mr-2 h-4 w-4 ${isWatchlisted ? "fill-current" : ""}`}
-                  />
-                  {isWatchlisted ? "관심상품 등록됨" : "관심상품 등록"}
                 </Button>
               </div>
             ) : (
