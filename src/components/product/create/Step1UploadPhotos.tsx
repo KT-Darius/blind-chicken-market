@@ -12,7 +12,8 @@ interface Step1UploadPhotosProps {
 
 // 랜덤 6글자 (영문 대/소문자 + 숫자)
 const generateRandomId = (length = 6) => {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
   for (let i = 0; i < length; i++) {
     const idx = Math.floor(Math.random() * chars.length);
@@ -60,8 +61,28 @@ export default function Step1UploadPhotos({
     const file = files[0];
     if (!file) return;
 
+    // 🔹 허용된 파일 형식 검증
+    const allowedFormats = [
+      "image/png",
+      "image/jpg",
+      "image/jpeg",
+      "image/gif",
+      "image/webp",
+    ];
+    const allowedExtensions = ["png", "jpg", "jpeg", "gif", "webp"];
+
+    const { ext } = getFileNameAndExt(file.name);
+    const isValidType = allowedFormats.includes(file.type.toLowerCase());
+    const isValidExt = allowedExtensions.includes(ext.toLowerCase());
+
+    if (!isValidType && !isValidExt) {
+      alert("PNG, JPG, JPEG, GIF, WEBP 형식의 이미지만 업로드할 수 있습니다.");
+      e.target.value = "";
+      return;
+    }
+
     // 🔹 새 파일 이름 생성 로직
-    const { name: originalName, ext } = getFileNameAndExt(file.name);
+    const { name: originalName } = getFileNameAndExt(file.name);
     const randomId = generateRandomId(6); // 영문+숫자 6글자
     const safeExt = ext || file.type.split("/")[1] || "img";
 
@@ -96,7 +117,10 @@ export default function Step1UploadPhotos({
     <div className="space-y-6">
       <div>
         <h2 className="text-foreground mb-2 text-2xl font-bold">사진 업로드</h2>
-        <p className="text-muted-foreground">상품 사진 1장을 업로드해주세요.</p>
+
+        <p className="text-muted-foreground mt-1 text-xs">
+          허용 형식: PNG, JPG, JPEG, GIF, WEBP
+        </p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
@@ -107,9 +131,10 @@ export default function Step1UploadPhotos({
               사진 업로드
             </span>
             <span className="text-muted-foreground text-xs">최대 5MB</span>
+
             <input
               type="file"
-              accept="image/*"
+              accept="image/png,image/jpg,image/jpeg,image/gif,image/webp"
               onChange={handleImageUpload}
               className="hidden"
               disabled={imageFiles.length >= 1}
