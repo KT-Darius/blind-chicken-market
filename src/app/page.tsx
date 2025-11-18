@@ -11,6 +11,13 @@ import { ProductListResponse, Product } from "@/types";
 
 import mockData from "@/mocks/products.json";
 
+type SortOption =
+  | "latest"
+  | "price-high"
+  | "price-low"
+  | "bid-count"
+  | "ending-soon";
+
 export default function Home() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
@@ -18,6 +25,8 @@ export default function Home() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [sortedProducts, setSortedProducts] = useState<Product[]>([]);
+  const [sortBy, setSortBy] = useState<SortOption>("latest");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -72,6 +81,31 @@ export default function Home() {
     setFilteredProducts(filtered);
   }, [searchQuery, products]);
 
+  // 정렬 기능
+  useEffect(() => {
+    const sorted = [...filteredProducts].sort((a, b) => {
+      switch (sortBy) {
+        case "latest":
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        case "price-high":
+          return b.bidPrice - a.bidPrice;
+        case "price-low":
+          return a.bidPrice - b.bidPrice;
+        case "bid-count":
+          return b.bidCount - a.bidCount;
+        case "ending-soon":
+          return (
+            new Date(a.bidEndDate).getTime() - new Date(b.bidEndDate).getTime()
+          );
+        default:
+          return 0;
+      }
+    });
+    setSortedProducts(sorted);
+  }, [filteredProducts, sortBy]);
+
   return (
     <main className="bg-background min-h-screen">
       {/* Hero Section */}
@@ -100,13 +134,30 @@ export default function Home() {
       {/* Products Grid */}
       <section className="py-12 md:py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <p className="font-bold">
-              {searchQuery ? `"${searchQuery}" 검색 결과` : "Hot Items🔥"}
-            </p>
-            <p className="text-muted-foreground text-sm">
-              Showing {filteredProducts.length} items
-            </p>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <p className="font-bold">
+                {searchQuery ? `"${searchQuery}" 검색 결과` : "Hot Items🔥"}
+              </p>
+              <p className="text-muted-foreground text-sm">
+                Showing {sortedProducts.length} items
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <select
+                id="sort-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="border-input bg-background ring-offset-background focus:ring-ring rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-none"
+              >
+                <option value="latest">최신순</option>
+                <option value="ending-soon">마감임박순</option>
+                <option value="price-high">높은 가격순</option>
+                <option value="price-low">낮은 가격순</option>
+                <option value="bid-count">입찰 많은순</option>
+              </select>
+            </div>
           </div>
 
           {loading ? (
@@ -115,7 +166,7 @@ export default function Home() {
                 <ProductCardSkeleton key={index} />
               ))}
             </div>
-          ) : filteredProducts.length === 0 ? (
+          ) : sortedProducts.length === 0 ? (
             <div className="py-12 text-center">
               <p className="text-muted-foreground text-lg">
                 {searchQuery
@@ -125,7 +176,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredProducts.map((product) => (
+              {sortedProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
