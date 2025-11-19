@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Star, LogOut, Edit2 } from "lucide-react";
+import { Edit2 } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "@/hooks/user/useAuth";
 import { PRODUCT_STATUS } from "@/lib/constants";
@@ -29,8 +29,6 @@ const mockUser = {
   joinDate: "2024년 11월 가입",
   rating: 4.8,
   reviews: 127,
-  wins: 23,
-  active: 5,
   phoneNumber: "010-0000-0000",
 };
 
@@ -39,13 +37,11 @@ type UserProfile = {
   joinDate: string;
   rating: number;
   reviews: number;
-  wins: number;
-  active: number;
   phoneNumber: string;
 };
 
 export default function MyPage() {
-  const { updateNickname } = useAuth();
+  const { updateNickname, logout } = useAuth();
   const router = useRouter();
   const [user, setUser] = useState<UserProfile>(mockUser);
   const [nickname, setNickname] = useState("");
@@ -69,8 +65,11 @@ export default function MyPage() {
       // 🔹 1) 유저 기본 정보 가져오기
       const fetchUserInfo = async () => {
         try {
-          const response = await axios.get(`${API_BASE_URL}/api/users/me`, {
-            withCredentials: true,
+          const token = localStorage.getItem("accessToken");
+          const response = await axios.get(`${API_BASE_URL}/api/users/me`, { 
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           });
 
           const apiUser = response.data;
@@ -87,8 +86,6 @@ export default function MyPage() {
               : mockUser.joinDate,
             rating: apiUser.rating ?? mockUser.rating,
             reviews: apiUser.reviews ?? mockUser.reviews,
-            wins: apiUser.winners.length ?? 0,
-            active: apiUser.productBids.length ?? 0,
 
             // ✅ 전화번호: 서버에서 값이 비어 있거나(null/undefined/빈문자열) 하면 목업 값으로 대체
             //  - 백엔드 필드명이 phoneNumber가 아니면 여기만 바꾸면 됨
@@ -102,19 +99,28 @@ export default function MyPage() {
           setUser(fetchedUser);
           setNickname(fetchedUser.nickname);
           setPhoneNumber(fetchedUser.phoneNumber);
-        } catch (error) {
+                } catch (error) {
           if (axios.isAxiosError(error)) {
             const status = error.response?.status;
+
+            // 🔹 인증 오류면: 진짜로 로그아웃 + 로그인 페이지 이동
             if (status === 401 || status === 403) {
               console.warn("인증 오류로 401/403 발생:", error);
-              alert("로그인이 필요합니다. 로그인 페이지로 이동합니다.");
-              router.push("/login");
+              
+              // alert("로그인이 필요합니다. 로그인 페이지로 이동합니다.");
+              // 전역 Auth 상태 비우기
+              // logout();
+              // router.replace("/login");
+
               return;
             }
           }
 
+          // 🔹 그 외의 오류일 때만 콘솔 찍고, 목업으로 대체할지 말지 결정
           console.error("사용자 정보 가져오기 실패:", error);
-          // 실패 시에도 목업 정보로 상태 세팅
+
+          // 굳이 목업을 쓰고 싶으면 아래 3줄 유지,
+          // "그냥 비워두고 싶다"면 이 3줄 지워도 됨
           setUser(mockUser);
           setNickname(mockUser.nickname);
           setPhoneNumber(mockUser.phoneNumber);
@@ -226,23 +232,6 @@ export default function MyPage() {
       }
     };
 
-
-  // 🔹 로그아웃 함수
-  const handleLogout = async () => {
-    try {
-      // 나중에 백엔드에서 로그아웃 API를 만들면
-      // 여기 안에 axios.post(...) 한 줄만 추가
-      // 예시:
-      // await axios.post(`${API_BASE_URL}/api/auth/logout`, {}, { withCredentials: true });
-
-      alert("로그아웃되었습니다.");
-      router.push("/login"); // 로그인 페이지로 이동
-    } catch (error) {
-      console.error("로그아웃 실패:", error);
-      alert("로그아웃 중 문제가 발생했습니다. 다시 시도해주세요.");
-    }
-  };
-
   // 4. 서버 데이터 받음
   // 5. 화면에 렌더링, useState
   // 6. 백엔드 api주소 변경 확인
@@ -297,9 +286,9 @@ export default function MyPage() {
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         {/* Profile Header */}
         <div className="bg-card border-border mb-8 rounded-lg border p-6 md:p-8">
-          <div className="mb-8 flex items-start justify-between gap-4">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex-1">
-              <h1 className="text-foreground text-3xl font-bold md:text-4xl">
+              <h1 className="text-foreground text-2xl font-bold md:text-3xl">
                 {user.nickname}
               </h1>
               <p className="text-muted-foreground mt-2 text-sm">
@@ -367,39 +356,6 @@ export default function MyPage() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-lg bg-transparent"
-                onClick={handleLogout} // 🔹 여기 추가
-              >
-                <LogOut className="h-4 w-4" />
-                로그아웃
-              </Button>
-            </div>
-          </div>
-
-        {/* Stats Grid */}
-        <div className="mt-6 grid grid-cols-2 gap-4 md:gap-6">
-            {/* Wins */}
-            <div className="bg-card border-border space-y-2 rounded-lg border p-4">
-              <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
-                낙찰
-              </p>
-              <p className="text-foreground text-3xl font-bold">{user.wins}</p>
-              <p className="text-muted-foreground text-xs">총 낙찰 상품</p>
-            </div>
-
-            {/* Active Bids */}
-            <div className="bg-card border-border space-y-2 rounded-lg border p-4">
-              <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
-                진행 중인 입찰
-              </p>
-              <p className="text-foreground text-3xl font-bold">
-                {user.active}
-              </p>
-              <p className="text-muted-foreground text-xs">현재 입찰 중</p>
             </div>
           </div>
         </div>
@@ -423,7 +379,7 @@ export default function MyPage() {
 
               {/* 입찰 중 (구매 진행 중) */}
               <div className="border-l border-border">
-                <p className="text-muted-foreground">입찰 중</p>
+                <p className="text-muted-foreground">구매 중</p>
                 <p className="mt-1 text-foreground text-xl font-semibold">
                   {purchaseOngoingProducts.length}
                 </p>
@@ -431,7 +387,7 @@ export default function MyPage() {
 
               {/* 종료 = 구매 완료 */}
               <div>
-                <p className="text-muted-foreground">낙찰</p>
+                <p className="text-muted-foreground">구매 완료</p>
                 <p className="mt-1 text-foreground text-xl font-semibold">
                   {purchasedProducts.length}
                 </p>
@@ -442,7 +398,7 @@ export default function MyPage() {
           {/* (1) 구매 중 그룹 */}
           <div className="mb-6">
             <h3 className="mb-3 text-sm font-medium text-muted-foreground">
-              입찰 중
+              구매 중
             </h3>
             <div className="space-y-3">
               {purchaseOngoingProducts.length === 0 && (
@@ -461,8 +417,14 @@ export default function MyPage() {
               )}
 
               {purchaseOngoingProducts.map((product) => (
-                <Link key={product.productId} href={`/products/${product.productId}`}>
-                  <div className="border-border hover:bg-muted flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors">
+                                <div
+                  key={product.productId}
+                  className="hover:bg-muted cursor-pointer p-4 transition-colors border-b last:border-b-0"
+                >
+                  <Link
+                    href={`/products/${product.productId}`}
+                    className="flex items-center justify-between"
+                  >
                     <div className="flex-1">
                       {/* 상품 이름 */}
                       <p className="text-foreground font-medium">
@@ -473,24 +435,20 @@ export default function MyPage() {
                         <Badge variant="default" className="text-xs">
                           진행 중
                         </Badge>
-                        <p className="text-muted-foreground text-xs">
-                            내 입찰 횟수: {product.bidCount}
-                        </p>
                       </div>
                     </div>
 
                     <div className="text-right">
                       {/* 입찰가 있으면 bidPrice, 없으면 시작가(startPrice) */}
                       <p className="text-foreground text-lg font-bold">
-                        ₩
-                        {product.price.toLocaleString()}
+                        ₩{product.price.toLocaleString()}
                       </p>
                       <p className="text-primary mt-1 text-xs font-medium">
                         진행 중
                       </p>
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                </div>
               ))}
             </div>
           </div>
@@ -577,7 +535,7 @@ export default function MyPage() {
 
               {/* 종료 = 판매 완료 */}
               <div>
-                <p className="text-muted-foreground">판매 종료</p>
+                <p className="text-muted-foreground">판매 완료</p>
                 <p className="mt-1 text-foreground text-xl font-semibold">
                   {soldOutProducts.length}
                 </p>
@@ -607,8 +565,14 @@ export default function MyPage() {
               )}
 
               {sellingOngoingProducts.map((product) => (
-                <Link key={product.id} href={`/products/${product.id}`}>
-                  <div className="border-border hover:bg-muted flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-colors">
+                <div
+                  key={product.id}
+                  className="hover:bg-muted cursor-pointer p-4 transition-colors border-b last:border-b-0"
+                >
+                  <Link
+                    href={`/products/${product.id}`}
+                    className="flex items-center justify-between"
+                  >
                     <div className="flex-1">
                       {/* 상품 이름 */}
                       <p className="text-foreground font-medium">
@@ -628,17 +592,14 @@ export default function MyPage() {
                     <div className="text-right">
                       {/* 입찰가 있으면 bidPrice, 없으면 시작가(startPrice) */}
                       <p className="text-foreground text-lg font-bold">
-                        ₩
-                        {(
-                          product.bidPrice ?? product.startPrice
-                        ).toLocaleString()}
+                        ₩{(product.bidPrice ?? product.startPrice).toLocaleString()}
                       </p>
                       <p className="text-primary mt-1 text-xs font-medium">
                         진행 중
                       </p>
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                </div>
               ))}
             </div>
           </div>
@@ -646,7 +607,7 @@ export default function MyPage() {
           {/* (2) 판매 완료 그룹 */}
           <div>
             <h3 className="mb-3 text-sm font-medium text-muted-foreground">
-              판매 종료
+              판매 완료
             </h3>
             <div className="space-y-3">
               {soldOutProducts.length === 0 && (
