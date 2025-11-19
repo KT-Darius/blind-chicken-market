@@ -23,17 +23,22 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get("search") || "";
 
-  const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [sortedProducts, setSortedProducts] = useState<Product[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>("latest");
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
+  const pageSize = 6;
 
+  // 전체 상품 데이터 가져오기
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchAllProducts = async () => {
+      setLoading(true);
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/products?page=0&offset=10`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/products?page=0&size=1000`,
         );
 
         if (!res.ok) {
@@ -42,48 +47,46 @@ function HomeContent() {
 
         const data: ProductListResponse = await res.json();
 
-        // API 응답은 성공했으나, 데이터가 비어있는 경우 mock 데이터 사용
         if (data.content && data.content.length > 0) {
-          setProducts(data.content);
+          setAllProducts(data.content);
         } else {
-          console.warn("API returned empty list, loading mock data.");
-          setProducts(mockData as Product[]);
+          setAllProducts(mockData as Product[]);
         }
       } catch (error) {
-        // API fetch 자체가 실패한 경우(네트워크 오류, 서버 다운 등) mock 데이터 사용
         console.error("API fetch failed, loading mock data:", error);
-        setProducts(mockData as Product[]);
+        setAllProducts(mockData as Product[]);
       } finally {
         setLoading(false);
       }
     };
-    fetchProducts();
+    fetchAllProducts();
   }, []);
 
-  // 검색 필터링
+  // 검색어 변경 시 페이지 리셋
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredProducts(products);
-      return;
+    setCurrentPage(0);
+  }, [searchQuery]);
+
+  // 필터링, 정렬, 페이지네이션 적용
+  useEffect(() => {
+    if (allProducts.length === 0) return;
+
+    // 1. 검색 필터링
+    let filtered = allProducts;
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = allProducts.filter((product) => {
+        const matchName = product.name.toLowerCase().includes(query);
+        const matchDescription = product.description
+          .toLowerCase()
+          .includes(query);
+        const matchCategory = product.category.toLowerCase().includes(query);
+        return matchName || matchDescription || matchCategory;
+      });
     }
 
-    const query = searchQuery.toLowerCase();
-    const filtered = products.filter((product) => {
-      const matchName = product.name.toLowerCase().includes(query);
-      const matchDescription = product.description
-        .toLowerCase()
-        .includes(query);
-      const matchCategory = product.category.toLowerCase().includes(query);
-
-      return matchName || matchDescription || matchCategory;
-    });
-
-    setFilteredProducts(filtered);
-  }, [searchQuery, products]);
-
-  // 정렬 기능
-  useEffect(() => {
-    const sorted = [...filteredProducts].sort((a, b) => {
+    // 2. 정렬
+    const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "latest":
           return (
@@ -103,8 +106,14 @@ function HomeContent() {
           return 0;
       }
     });
-    setSortedProducts(sorted);
-  }, [filteredProducts, sortBy]);
+
+    // 3. 페이지네이션
+    const startIdx = currentPage * pageSize;
+    const endIdx = startIdx + pageSize;
+    setSortedProducts(sorted.slice(startIdx, endIdx));
+    setTotalPages(Math.ceil(sorted.length / pageSize));
+    setTotalItems(sorted.length);
+  }, [allProducts, searchQuery, sortBy, currentPage]);
 
   return (
     <main className="bg-background min-h-screen">
@@ -140,7 +149,9 @@ function HomeContent() {
                 {searchQuery ? `"${searchQuery}" 검색 결과` : "Hot Items🔥"}
               </p>
               <p className="text-muted-foreground text-sm">
-                Showing {sortedProducts.length} items
+                {searchQuery
+                  ? `총 ${totalItems}개 중 ${sortedProducts.length}개 표시`
+                  : `Showing ${sortedProducts.length} items`}
               </p>
             </div>
 
@@ -175,11 +186,56 @@ function HomeContent() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {sortedProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {sortedProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-12 flex items-center justify-center gap-2">
+                  {Array.from({ length: totalPages }, (_, i) => i).map(
+                    (page) => {
+                      // 현재 페이지 주변만 표시 (처음, 끝, 현재 ±2)
+                      if (
+                        page === 0 ||
+                        page === totalPages - 1 ||
+                        (page >= currentPage - 2 && page <= currentPage + 2)
+                      ) {
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`min-w-8 px-2 py-1 text-sm transition-colors ${
+                              currentPage === page
+                                ? "text-foreground font-semibold"
+                                : "text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {page + 1}
+                          </button>
+                        );
+                      } else if (
+                        page === currentPage - 3 ||
+                        page === currentPage + 3
+                      ) {
+                        return (
+                          <span
+                            key={page}
+                            className="text-muted-foreground px-1 text-sm"
+                          >
+                            ...
+                          </span>
+                        );
+                      }
+                      return null;
+                    },
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
