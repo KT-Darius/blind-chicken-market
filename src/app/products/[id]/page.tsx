@@ -11,7 +11,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/user/useAuth";
 import ProductDetailSkeleton from "@/components/product/ProductDetailSkeleton";
 
-import { PRODUCT_CATEGORIES, PRODUCT_STATUS } from "@/lib/constants";
+import {
+  PRODUCT_CATEGORIES,
+  PRODUCT_STATUS,
+  BID_STATUS,
+} from "@/lib/constants";
 
 import SockJs from "sockjs-client";
 import { Client } from "@stomp/stompjs";
@@ -138,33 +142,6 @@ export default function ProductDetail({
     fetchProduct();
   }, [productId]);
 
-  // 경매 시간 정보 계산 (남은 시간 및 종료 여부)
-  const getTimeDiff = () => {
-    if (!product) return 0;
-    const now = new Date();
-    const endDate = new Date(product.bidEndDate);
-    return endDate.getTime() - now.getTime();
-  };
-
-  const calculateTimeLeft = () => {
-    const diffTime = getTimeDiff();
-    if (diffTime < 0) return "경매 종료";
-
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const diffHours = Math.floor(
-      (diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-    );
-    const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
-
-    if (diffDays > 0) return `${diffDays}일 ${diffHours}시간`;
-    if (diffHours > 0) return `${diffHours}시간 ${diffMinutes}분`;
-    return `${diffMinutes}분`;
-  };
-
-  const isAuctionEnded = () => {
-    return getTimeDiff() < 0;
-  };
-
   // 상품 상태 한글 변환
   const getProductStatus = (status: string) => {
     const statusItem = PRODUCT_STATUS.find((item) => item.value === status);
@@ -179,22 +156,27 @@ export default function ProductDetail({
     return categoryItem ? categoryItem.label : category;
   };
 
-  // 금액 구간별 최소 입찰 단위 계산
-  const getMinBidIncrement = (currentPrice: number) => {
-    const bidIncrements = [
-      { threshold: 100000, increment: 1000 }, // 10만원 미만: 1천원
-      { threshold: 1000000, increment: 5000 }, // 100만원 미만: 5천원
-      { threshold: 5000000, increment: 10000 }, // 500만원 미만: 1만원
-      { threshold: 10000000, increment: 50000 }, // 1천만원 미만: 5만원
-      { threshold: 50000000, increment: 100000 }, // 5천만원 미만: 10만원
-      { threshold: 100000000, increment: 500000 }, // 1억원 미만: 50만원
-      { threshold: Infinity, increment: 1000000 }, // 1억원 이상: 100만원
-    ];
+  // 입찰 상태 한글 변환
+  const getBidStatus = (category: string) => {
+    const bidstatusItem = BID_STATUS.find((item) => item.value === category);
+    return bidstatusItem ? bidstatusItem.label : category;
+  };
 
-    const tier = bidIncrements.find(
-      ({ threshold }) => currentPrice < threshold,
-    );
-    return tier ? tier.increment : 1000000;
+  // 금액 구간별 최소 입찰 단위 계산 (10의 제곱 기반)
+  const getMinBidIncrement = (currentPrice: number) => {
+    if (currentPrice === 0) return 1000;
+
+    // 현재 가격의 자릿수를 구함 (10의 제곱)
+    const magnitude = Math.pow(10, Math.floor(Math.log10(currentPrice)));
+
+    // 한 자릿수 아래 단위로 입찰 (예: 100만원 → 10만원, 1000만원 → 100만원)
+    return Math.max(magnitude / 10, 1000);
+  };
+
+  // 경매 마감 여부 확인
+  const isAuctionExpired = () => {
+    if (!product) return false;
+    return new Date() > new Date(product.bidEndDate);
   };
 
   const handlePlaceBid = () => {
@@ -286,6 +268,9 @@ export default function ProductDetail({
                 </div>
               </div>
               <Badge variant="outline" className="w-fit">
+                {getBidStatus(product.bidStatus)}
+              </Badge>
+              <Badge variant="outline" className="w-fit">
                 {getProductStatus(product.productStatus)}
               </Badge>
             </div>
@@ -307,9 +292,6 @@ export default function ProductDetail({
               >
                 ₩{product.bidPrice.toLocaleString()}
               </motion.p>
-              <p className="text-muted-foreground text-sm">
-                {product.bidCount}개 입찰 • 남은 시간 {calculateTimeLeft()}
-              </p>
             </div>
 
             {/* Item Info Grid */}
@@ -336,13 +318,13 @@ export default function ProductDetail({
                   size="lg"
                   className="w-full rounded-lg"
                   disabled={
-                    user?.email === product.user.email || isAuctionEnded()
+                    user?.email === product.user.email || isAuctionExpired()
                   }
                 >
-                  {user?.email === product.user.email
-                    ? "본인 상품입니다"
-                    : isAuctionEnded()
-                      ? "경매 종료"
+                  {isAuctionExpired()
+                    ? "경매가 종료되었습니다"
+                    : user?.email === product.user.email
+                      ? "본인 상품입니다"
                       : "입찰하기"}
                 </Button>
               </div>
@@ -364,6 +346,7 @@ export default function ProductDetail({
                     }}
                     className="bg-background border-border text-foreground focus:ring-primary placeholder:text-muted-foreground mt-2 w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none"
                     min={minBid}
+                    step={minBidIncrement}
                   />
                   {bidError && (
                     <p className="mt-2 text-xs font-medium text-red-500">
@@ -393,7 +376,12 @@ export default function ProductDetail({
 
             {/* Bid History */}
             <div className="border-border space-y-4 border-t pt-6">
-              <h3 className="text-foreground text-lg font-bold">입찰 기록</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-foreground text-lg font-bold">입찰 기록</h3>
+                <p className="text-muted-foreground text-sm">
+                  {product.bidCount}
+                </p>
+              </div>
               <div className="space-y-2">
                 <AnimatePresence mode="popLayout">
                   {product.productBids && product.productBids.length > 0 ? (

@@ -116,7 +116,9 @@ export default function Step1UploadPhotos({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-foreground mb-2 text-2xl font-bold">사진 업로드</h2>
+        <h2 className="text-foreground mb-2 text-2xl font-bold">
+          사진 업로드<span className="text-red-500">*</span>
+        </h2>
 
         <p className="text-muted-foreground mt-1 text-xs">
           허용 형식: PNG, JPG, JPEG, GIF, WEBP

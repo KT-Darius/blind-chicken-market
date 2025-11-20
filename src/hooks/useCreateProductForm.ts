@@ -10,7 +10,6 @@ import { ProductFormData } from "@/types";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export function useCreateProductForm() {
-
   const router = useRouter();
   const { user, isLoading: isAuthLoading, accessToken } = useAuth();
 
@@ -23,7 +22,7 @@ export function useCreateProductForm() {
     name: "",
     description: "",
     category: "ELECTRONICS",
-    startPrice: "",
+    startPrice: "0",
     bidEndDate: defaultBidEndDate,
     productStatus: "GOOD",
     imageUrl: "",
@@ -65,20 +64,43 @@ export function useCreateProductForm() {
       return;
     }
 
+    if (!formData.name || formData.name.trim() === "") {
+      alert("상품명을 입력해주세요.");
+      setStep(2);
+      return;
+    }
+
+    if (!formData.bidEndDate || formData.bidEndDate.trim() === "") {
+      alert("경매 종료 날짜를 입력해주세요.");
+      setStep(3);
+      return;
+    }
+
+    const endDate = new Date(formData.bidEndDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (endDate < today) {
+      alert("경매 종료 날짜는 오늘 이후여야 합니다.");
+      setStep(4);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
-
-      for(const file of imageFiles) {
-        
-        const presignedResponse = await axios.post(`${API_BASE_URL}/api/s3/upload-url`, {
-          fileName: file.name,
-        }, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          }
-        })
+      for (const file of imageFiles) {
+        const presignedResponse = await axios.post(
+          `${API_BASE_URL}/api/s3/upload-url`,
+          {
+            fileName: file.name,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          },
+        );
 
         await fetch(presignedResponse.data.url, {
           method: "PUT",
@@ -86,18 +108,21 @@ export function useCreateProductForm() {
             "Content-Type": file.type,
           },
           body: file,
-        })
-    
+        });
+      }
+
+      // 종료 날짜를 한국 시간 기준 23:59:59로 설정 (UTC로 변환하지 않음)
+      let bidEndDateString = null;
+      if (formData.bidEndDate) {
+        bidEndDateString = `${formData.bidEndDate}T23:59:59`;
       }
 
       const jsonData = JSON.stringify({
         name: formData.name,
         description: formData.description,
         category: formData.category,
-        price: parseInt(formData.startPrice, 10),
-        bidEndDate: formData.bidEndDate
-          ? new Date(formData.bidEndDate).toISOString()
-          : null,
+        price: formData.startPrice ? parseInt(formData.startPrice, 10) : 0,
+        bidEndDate: bidEndDateString,
         productStatus: formData.productStatus,
         imageUrl: imageFiles[0].name,
       });

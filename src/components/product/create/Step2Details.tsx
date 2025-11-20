@@ -29,7 +29,7 @@ export default function Step2Details({
         {/* name */}
         <div>
           <label className="text-foreground mb-2 block text-sm font-medium">
-            상품명 *
+            상품명 <span className="text-red-500">*</span>
           </label>
           <Input
             name="name"
@@ -37,6 +37,7 @@ export default function Step2Details({
             value={formData.name}
             onChange={onChange}
             className="w-full"
+            required
           />
         </div>
 
@@ -44,7 +45,7 @@ export default function Step2Details({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-foreground mb-2 block text-sm font-medium">
-              카테고리 *
+              카테고리 <span className="text-red-500">*</span>
             </label>
             <select
               name="category"
@@ -61,7 +62,7 @@ export default function Step2Details({
           </div>
           <div>
             <label className="text-foreground mb-2 block text-sm font-medium">
-              상태 *
+              상태 <span className="text-red-500">*</span>
             </label>
             <select
               name="productStatus"

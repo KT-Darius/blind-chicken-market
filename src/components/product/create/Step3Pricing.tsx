@@ -23,7 +23,7 @@ export default function Step3Pricing({
         {/* Starting Price */}
         <div>
           <label className="text-foreground mb-2 block text-sm font-medium">
-            시작 가격 *
+            시작 가격 <span className="text-red-500">*</span>
           </label>
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground text-lg font-semibold">
@@ -50,7 +50,7 @@ export default function Step3Pricing({
         {/* Auction end date */}
         <div>
           <label className="text-foreground mb-2 block text-sm font-medium">
-            경매 종료 날짜 *
+            경매 종료 날짜 <span className="text-red-500">*</span>
           </label>
           <Input
             type="date"
@@ -59,6 +59,7 @@ export default function Step3Pricing({
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, bidEndDate: e.target.value }))
             }
+            min={new Date().toISOString().split("T")[0]}
             className="max-w-xs"
           />
         </div>

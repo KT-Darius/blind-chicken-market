@@ -17,15 +17,14 @@ export const PRODUCT_CATEGORIES = [
 export const PRODUCT_STATUS = [
   { label: "좋음", value: "GOOD" },
   { label: "보통", value: "AVERAGE" },
-  { label: "나쁨", value: "BAD" },  
+  { label: "나쁨", value: "BAD" },
 ];
 
 /**
- * 경매 기간
+ * 경매 상태
  */
-export const AUCTION_DURATIONS = [
-  { label: "3일", value: "3" },
-  { label: "7일", value: "7" },
-  { label: "14일", value: "14" },
-  { label: "30일", value: "30" },
+export const BID_STATUS = [
+  { label: "미입찰", value: "NOT_BIDDED" },
+  { label: "입찰중", value: "BIDDED" },
+  { label: "종료", value: "COMPLETED" },
 ];
