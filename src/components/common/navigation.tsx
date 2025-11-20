@@ -34,7 +34,7 @@ export default function Navigation() {
           className="text-foreground flex shrink-0 items-center gap-2 text-xl font-bold transition-opacity hover:opacity-80"
         >
           <Image src="/BCM.png" alt="BCM 로고" width={32} height={32} />
-          ㅂㅊㅁ
+          <span className="text-xl font-logo">ㅂㅊㅁ</span>
         </Link>
 
         {/* 검색바 */}

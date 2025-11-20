@@ -444,6 +444,9 @@ export default function MyPage() {
                       <p className="text-foreground text-lg font-bold">
                         ₩{product.price.toLocaleString()}
                       </p>
+                      <p className="text-muted-foreground text-xs">
+                        전체 입찰 횟수: {product.bidCount}
+                      </p>
                     </div>
                   </Link>
                 </div>
@@ -588,6 +591,9 @@ export default function MyPage() {
                       {/* 입찰가 있으면 bidPrice, 없으면 시작가(startPrice) */}
                       <p className="text-foreground text-lg font-bold">
                         ₩{(product.bidPrice ?? product.startPrice).toLocaleString()}
+                      </p>
+                      <p className="text-muted-foreground text-xs">
+                        전체 입찰 횟수: {product.bidCount}
                       </p>
                     </div>
                   </Link>
