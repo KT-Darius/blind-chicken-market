@@ -48,7 +48,7 @@ export default function ProductCard({ product }: { product: Product }) {
           </h3>
 
           <div className="space-y-1">
-            <p className="text-foreground text-2xl font-bold">
+            <p className="text-foreground text-2xl font-bold break-all">
               \{product.bidPrice.toLocaleString("ko-KR")}
             </p>
             <span className="text-muted-foreground flex items-center gap-1 text-xs font-medium">

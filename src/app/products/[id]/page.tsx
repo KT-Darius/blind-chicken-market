@@ -142,6 +142,26 @@ export default function ProductDetail({
     fetchProduct();
   }, [productId]);
 
+  // 남은 시간 계산
+  const calculateTimeLeft = () => {
+    if (!product) return "";
+    const now = new Date();
+    const endDate = new Date(product.bidEndDate);
+    const diffTime = endDate.getTime() - now.getTime();
+
+    if (diffTime < 0) return "경매 종료";
+
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(
+      (diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+    );
+    const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (diffDays > 0) return `${diffDays}일 ${diffHours}시간`;
+    if (diffHours > 0) return `${diffHours}시간 ${diffMinutes}분`;
+    return `${diffMinutes}분`;
+  };
+
   // 상품 상태 한글 변환
   const getProductStatus = (status: string) => {
     const statusItem = PRODUCT_STATUS.find((item) => item.value === status);
@@ -177,6 +197,30 @@ export default function ProductDetail({
   const isAuctionExpired = () => {
     if (!product) return false;
     return new Date() > new Date(product.bidEndDate);
+  };
+
+  // 남은 시간 계산
+  const getTimeRemaining = () => {
+    if (!product) return null;
+    const now = new Date();
+    const endDate = new Date(product.bidEndDate);
+    const diffMs = endDate.getTime() - now.getTime();
+
+    if (diffMs < 0) return null; // 경매 종료
+
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+
+    if (diffHours < 1) {
+      return "경매가 곧 마감됩니다";
+    }
+
+    const diffDays = Math.floor(diffHours / 24);
+    const remainingHours = diffHours % 24;
+
+    if (diffDays > 0) {
+      return `${diffDays}일 ${remainingHours}시간`;
+    }
+    return `${diffHours}시간`;
   };
 
   const handlePlaceBid = () => {
@@ -276,13 +320,13 @@ export default function ProductDetail({
             </div>
 
             {/* Current Bid Section */}
-            <div className="space-y-2">
+            <div className="space-y-2 overflow-hidden">
               <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
                 현재 입찰가
               </p>
               <motion.p
                 key={priceKey}
-                className="text-foreground text-4xl font-bold"
+                className="text-foreground text-3xl font-bold wrap-break-word sm:text-4xl"
                 initial={{ scale: 1, color: "inherit" }}
                 animate={{
                   scale: [1, 1.1, 1],
@@ -303,8 +347,22 @@ export default function ProductDetail({
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">최소 입찰가</span>
-                <span className="text-foreground font-medium">
+                <span className="text-muted-foreground">남은 시간</span>
+                <span
+                  className={`font-medium ${
+                    getTimeRemaining() === "🔥마감 임박🔥"
+                      ? "font-bold text-red-500"
+                      : "text-foreground"
+                  }`}
+                >
+                  {getTimeRemaining() || "경매 종료"}
+                </span>
+              </div>
+              <div className="flex justify-between gap-2 text-sm">
+                <span className="text-muted-foreground shrink-0">
+                  최소 입찰가
+                </span>
+                <span className="text-foreground text-right font-medium break-all">
                   ₩{minBid.toLocaleString()}
                 </span>
               </div>
@@ -341,8 +399,16 @@ export default function ProductDetail({
                     type="number"
                     value={bidAmount}
                     onChange={(e) => {
-                      setBidAmount(e.target.value);
-                      setBidError(null);
+                      const value = e.target.value;
+                      // 1경(10,000,000,000,000,000) 미만만 허용 (16자리 미만)
+                      if (
+                        value === "" ||
+                        (value.length <= 16 &&
+                          Number(value) < 10000000000000000)
+                      ) {
+                        setBidAmount(value);
+                        setBidError(null);
+                      }
                     }}
                     className="bg-background border-border text-foreground focus:ring-primary placeholder:text-muted-foreground mt-2 w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none"
                     min={minBid}
@@ -403,8 +469,8 @@ export default function ProductDetail({
                             index === 0 ? "border-green-300 bg-green-50" : ""
                           }`}
                         >
-                          <div className="flex-1">
-                            <p className="text-foreground font-semibold">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-foreground font-semibold break-all">
                               ₩{bid.price.toLocaleString()}
                             </p>
                             <p className="text-muted-foreground text-xs">

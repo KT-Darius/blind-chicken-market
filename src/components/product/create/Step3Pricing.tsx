@@ -34,15 +34,20 @@ export default function Step3Pricing({
               name="startPrice"
               placeholder="0"
               value={formData.startPrice}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  startPrice: e.target.value,
-                }))
-              }
+              onChange={(e) => {
+                const value = e.target.value;
+                // 12자리(999,999,999,999) 이하만 허용
+                if (value === "" || value.length <= 12) {
+                  setFormData((prev) => ({
+                    ...prev,
+                    startPrice: value,
+                  }));
+                }
+              }}
               className="flex-1"
-              step="1000"
+              step="1"
               min="0"
+              maxLength={12}
             />
           </div>
         </div>

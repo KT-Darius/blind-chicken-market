@@ -111,10 +111,36 @@ export function useCreateProductForm() {
         });
       }
 
-      // 종료 날짜를 한국 시간 기준 23:59:59로 설정 (UTC로 변환하지 않음)
+      // 종료 날짜를 현재 시간 이후의 랜덤한 시간으로 설정
       let bidEndDateString = null;
       if (formData.bidEndDate) {
-        bidEndDateString = `${formData.bidEndDate}T23:59:59`;
+        const selectedDate = new Date(formData.bidEndDate);
+        const now = new Date();
+
+        // 선택한 날짜가 오늘이면 현재 시간 이후로, 미래 날짜면 00:00:00 ~ 23:59:59 사이로 설정
+        let minTime, maxTime;
+        if (selectedDate.toDateString() === now.toDateString()) {
+          // 오늘이면 현재 시간 이후부터 23:59:59까지
+          minTime =
+            now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+          maxTime = 86399; // 23:59:59
+        } else {
+          // 미래 날짜면 00:00:00 ~ 23:59:59
+          minTime = 0;
+          maxTime = 86399;
+        }
+
+        const randomSeconds =
+          Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
+        const hours = Math.floor(randomSeconds / 3600)
+          .toString()
+          .padStart(2, "0");
+        const minutes = Math.floor((randomSeconds % 3600) / 60)
+          .toString()
+          .padStart(2, "0");
+        const seconds = (randomSeconds % 60).toString().padStart(2, "0");
+
+        bidEndDateString = `${formData.bidEndDate}T${hours}:${minutes}:${seconds}`;
       }
 
       const jsonData = JSON.stringify({
