@@ -34,7 +34,7 @@ export default function Navigation() {
           className="text-foreground flex shrink-0 items-center gap-2 text-xl font-bold transition-opacity hover:opacity-80"
         >
           <Image src="/BCM.png" alt="BCM 로고" width={32} height={32} />
-          <span className="text-xl font-logo">ㅂㅊㅁ</span>
+          <span className="font-logo text-xl">ㅂㅊㅁ</span>
         </Link>
 
         {/* 검색바 */}
@@ -46,7 +46,7 @@ export default function Navigation() {
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
             <input
               type="text"
-              placeholder="상품 검색..."
+              placeholder="제목 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="border-border bg-background text-foreground placeholder-muted-foreground focus:ring-foreground w-full rounded-lg border py-2 pr-4 pl-10 transition-all focus:ring-2 focus:outline-none"

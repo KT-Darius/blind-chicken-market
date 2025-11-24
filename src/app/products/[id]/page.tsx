@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { useAuth } from "@/hooks/user/useAuth";
 import ProductDetailSkeleton from "@/components/product/ProductDetailSkeleton";
+import mockData from "@/mocks/products.json";
 
 import {
   PRODUCT_CATEGORIES,
@@ -38,7 +39,9 @@ export default function ProductDetail({
   const [priceKey, setPriceKey] = useState(0);
   const [showAllBids, setShowAllBids] = useState(false);
   const [bidError, setBidError] = useState<string | null>(null);
+  const [isUsingMockData, setIsUsingMockData] = useState(false);
 
+  // productId 초기화
   useEffect(() => {
     const initializeParams = async () => {
       const resolvedParams = await Promise.resolve(params);
@@ -46,15 +49,66 @@ export default function ProductDetail({
     };
 
     initializeParams();
-
-    return () => {
-      clientRef.current?.deactivate();
-      console.log("WebSocket disconnected");
-    };
   }, [params]);
 
+  // 상품 데이터 설정 및 최소 입찰가 초기화
+  const setProductData = useCallback((productData: Product, isMock = false) => {
+    setProduct(productData);
+    if (isMock) setIsUsingMockData(true);
+    const minIncrement = getMinBidIncrement(productData.bidPrice);
+    setBidAmount((productData.bidPrice + minIncrement).toString());
+    setError(null);
+  }, []);
+
+  // API 호출 - 상품 데이터 로드 (WebSocket 연결보다 먼저 실행)
   useEffect(() => {
     if (!productId) return;
+
+    const fetchProduct = async () => {
+      try {
+        setIsLoading(true);
+        const response = await axios.get<Product>(
+          `${API_BASE_URL}/api/products/${productId}`,
+        );
+        setProductData(response.data);
+      } catch (err) {
+        console.error("상품 조회 실패:", err);
+        // API 호출 실패 시 목 데이터에서 찾기
+        const mockProduct = (mockData as Product[]).find(
+          (p) => p.id.toString() === productId,
+        );
+        if (mockProduct) {
+          console.log("mock 데이터에서 상품을 불러왔습니다.");
+          setProductData(mockProduct, true);
+        } else {
+          setError("상품을 불러오는데 실패했습니다.");
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [productId, setProductData]);
+
+  // WebSocket 연결 - 상품 데이터 로드 후 실행
+  useEffect(() => {
+    if (!productId || !product) return;
+
+    // 목 데이터 사용 중이면 WebSocket 연결하지 않음
+    if (isUsingMockData) {
+      console.log("mock 데이터 사용 중으로 WebSocket을 연결하지 않습니다.");
+      return;
+    }
+
+    // 경매가 마감되었으면 WebSocket 연결하지 않음
+    if (
+      product.bidStatus === "COMPLETED" ||
+      new Date() > new Date(product.bidEndDate)
+    ) {
+      console.log("경매가 마감되어 WebSocket을 연결하지 않습니다.");
+      return;
+    }
 
     const client = new Client({
       webSocketFactory: () => new SockJs(`${API_BASE_URL}/connect`),
@@ -115,52 +169,8 @@ export default function ProductDetail({
       clientRef.current?.deactivate();
       console.log("WebSocket disconnected");
     };
-  }, [productId]);
-
-  useEffect(() => {
-    if (!productId) return;
-
-    const fetchProduct = async () => {
-      try {
-        setIsLoading(true);
-        const response = await axios.get<Product>(
-          `${API_BASE_URL}/api/products/${productId}`,
-        );
-        setProduct(response.data);
-        // 다음 최소 입찰가 설정 (현재가 + 최소 입찰 단위)
-        const minIncrement = getMinBidIncrement(response.data.bidPrice);
-        setBidAmount((response.data.bidPrice + minIncrement).toString());
-        setError(null);
-      } catch (err) {
-        console.error("상품 조회 실패:", err);
-        setError("상품을 불러오는데 실패했습니다.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProduct();
-  }, [productId]);
-
-  // 남은 시간 계산
-  const calculateTimeLeft = () => {
-    if (!product) return "";
-    const now = new Date();
-    const endDate = new Date(product.bidEndDate);
-    const diffTime = endDate.getTime() - now.getTime();
-
-    if (diffTime < 0) return "경매 종료";
-
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const diffHours = Math.floor(
-      (diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-    );
-    const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
-
-    if (diffDays > 0) return `${diffDays}일 ${diffHours}시간`;
-    if (diffHours > 0) return `${diffHours}시간 ${diffMinutes}분`;
-    return `${diffMinutes}분`;
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productId, product?.bidStatus, isUsingMockData]);
 
   // 상품 상태 한글 변환
   const getProductStatus = (status: string) => {
@@ -273,8 +283,10 @@ export default function ProductDetail({
     );
   }
 
+  // 현재 bidAmount에서 최소 입찰가 정보 추출
+  const currentBidAmount = Number(bidAmount);
+  const minBid = isNaN(currentBidAmount) ? product.bidPrice : currentBidAmount;
   const minBidIncrement = getMinBidIncrement(product.bidPrice);
-  const minBid = product.bidPrice + minBidIncrement;
 
   return (
     <main className="bg-background min-h-screen py-8 md:py-12">
@@ -327,10 +339,10 @@ export default function ProductDetail({
               <motion.p
                 key={priceKey}
                 className="text-foreground text-3xl font-bold wrap-break-word sm:text-4xl"
-                initial={{ scale: 1, color: "inherit" }}
+                initial={{ scale: 1, color: "#09090b" }}
                 animate={{
                   scale: [1, 1.1, 1],
-                  color: ["inherit", "#22c55e", "inherit"],
+                  color: ["#09090b", "#ff1100", "#09090b"],
                 }}
                 transition={{ duration: 0.3 }}
               >
@@ -350,7 +362,7 @@ export default function ProductDetail({
                 <span className="text-muted-foreground">남은 시간</span>
                 <span
                   className={`font-medium ${
-                    getTimeRemaining() === "🔥마감 임박🔥"
+                    getTimeRemaining() === "경매가 곧 마감됩니다"
                       ? "font-bold text-red-500"
                       : "text-foreground"
                   }`}
@@ -509,7 +521,7 @@ export default function ProductDetail({
         <div className="mt-12 grid grid-cols-1 gap-8 md:gap-12">
           <div className="space-y-4">
             <h2 className="text-foreground text-2xl font-bold">상세 설명</h2>
-            <p className="text-foreground leading-relaxed">
+            <p className="text-foreground leading-relaxed whitespace-pre-wrap">
               {product.description}
             </p>
           </div>
