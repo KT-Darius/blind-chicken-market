@@ -42,6 +42,7 @@ export function useLoginForm() {
       if (!accessToken) {
         throw new Error("로그인 응답에 accessToken이 없습니다.");
       }
+      // Refresh Token은 HttpOnly Cookie로 백엔드에서 자동 설정됨
 
       // --- 2단계: Access Token을 전역으로 설정 ---
       // 이렇게 해야 다음 API 호출에서 Authorization 헤더가 포함됨

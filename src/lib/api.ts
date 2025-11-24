@@ -70,11 +70,6 @@ async function refreshAccessToken(): Promise<string | null> {
     console.error("토큰 재발급 실패:", error);
     setAccessToken(null);
 
-    // Refresh Token도 만료된 경우 로그인 페이지로 리다이렉트
-    if (typeof window !== "undefined") {
-      window.location.href = "/login";
-    }
-
     return null;
   }
 }
