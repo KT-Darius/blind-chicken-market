@@ -7,22 +7,29 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-let accessToken: string | null = null;
 let isRefreshing = false;
 let refreshSubscribers: Array<(token: string) => void> = [];
+const ACCESS_TOKEN_KEY = "accessToken";
 
 /**
  * Access Token 설정
  */
 export function setAccessToken(token: string | null) {
-  accessToken = token;
+  if (typeof window !== "undefined") {
+    if (token) {
+      localStorage.setItem(ACCESS_TOKEN_KEY, token);
+    } else {
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+    }
+  }
 }
 
 /**
  * Access Token 가져오기
  */
 export function getAccessToken(): string | null {
-  return accessToken;
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
 /**
@@ -95,11 +102,12 @@ export async function apiFetch<T = unknown>(
     },
   };
 
+  const currentAccessToken = getAccessToken();
   // Access Token이 있으면 Authorization 헤더에 추가
-  if (accessToken) {
+  if (currentAccessToken) {
     config.headers = {
       ...config.headers,
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${currentAccessToken}`,
     };
   }
 

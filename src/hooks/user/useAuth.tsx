@@ -12,6 +12,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { User, AuthContextType } from "@/types";
 import {
   setAccessToken as setGlobalAccessToken,
+  getAccessToken,
   apiPost,
   apiGet,
 } from "@/lib/api";
@@ -21,20 +22,21 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  // Access Token은 메모리 상태로만 관리 (localStorage 사용 안 함)
-  // Refresh Token은 HttpOnly Cookie로 백엔드에서 자동 관리
-  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const login = useCallback((token: string, userData: User) => {
-    // 메모리 상태에만 저장
-    setAccessToken(token);
-    setUser(userData);
-    // API fetch wrapper에 토큰 설정
-    setGlobalAccessToken(token);
-    // Refresh Token은 HttpOnly Cookie로 자동 관리됨
-  }, []);
+  // accessToken 상태는 localStorage와 동기화됩니다.
+  const accessToken = getAccessToken();
+
+  const login = useCallback(
+    (token: string, userData: User) => {
+      // API fetch wrapper와 localStorage에 토큰 설정
+      setGlobalAccessToken(token);
+      setUser(userData);
+      router.refresh(); // 상태 반영을 위해 페이지 새로고침
+    },
+    [router],
+  );
 
   const logout = useCallback(async () => {
     try {
@@ -44,7 +46,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("로그아웃 API 호출 실패:", error);
     } finally {
       // 클라이언트 상태 초기화
-      setAccessToken(null);
       setUser(null);
       setGlobalAccessToken(null);
       router.push("/login");
@@ -78,14 +79,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }>("/api/auth/reissue");
 
         if (response.accessToken) {
-          setAccessToken(response.accessToken);
-          setGlobalAccessToken(response.accessToken);
-
-          // Refresh Token은 HttpOnly Cookie로 자동 갱신됨
-
-          // 사용자 정보 가져오기
-          const userResponse = await apiGet<User>("/api/users/me");
-          setUser(userResponse);
+          // apiPost("/api/auth/reissue") 내부의 apiFetch가 성공 시
+          // 토큰을 localStorage에 저장하므로 별도 저장은 불필요합니다.
+          // 상태를 다시 동기화하기 위해 페이지를 새로고침합니다.
+          router.refresh();
+          return; // 새로고침 후 아래 로직은 실행되지 않도록 합니다.
         }
       } catch {
         console.log("인증 정보 없음 또는 만료됨");
