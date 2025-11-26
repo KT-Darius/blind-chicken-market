@@ -386,14 +386,18 @@ export default function ProductDetail({
                   size="lg"
                   className="w-full rounded-lg"
                   disabled={
-                    user?.email === product.user.email || isAuctionExpired()
+                    !user ||
+                    user?.email === product.user.email ||
+                    isAuctionExpired()
                   }
                 >
                   {isAuctionExpired()
                     ? "경매가 종료되었습니다"
-                    : user?.email === product.user.email
-                      ? "본인 상품입니다"
-                      : "입찰하기"}
+                    : !user
+                      ? "로그인이 필요합니다"
+                      : user?.email === product.user.email
+                        ? "본인 상품입니다"
+                        : "입찰하기"}
                 </Button>
               </div>
             ) : (
