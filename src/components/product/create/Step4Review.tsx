@@ -1,5 +1,6 @@
 import { ProductFormData } from "@/types";
 import { PRODUCT_CATEGORIES, PRODUCT_STATUS } from "@/lib/constants";
+import { formatCurrency } from "@/lib/utils";
 
 interface Step4ReviewProps {
   formData: ProductFormData;
@@ -82,10 +83,9 @@ export default function Step4Review({
             <div>
               <p className="text-muted-foreground text-xs">시작 가격</p>
               <p className="text-foreground font-semibold">
-                {`₩${Number.parseInt(
-                  formData.startPrice || "0",
-                  10,
-                ).toLocaleString()}`}
+                {formatCurrency(
+                  Number.parseInt(formData.startPrice || "0", 10),
+                )}
               </p>
             </div>
             <div>

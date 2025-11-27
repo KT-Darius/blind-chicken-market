@@ -1,5 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { ProductFormData } from "@/types";
+import { formatCurrency } from "@/lib/utils";
 
 interface Step3PricingProps {
   formData: ProductFormData;

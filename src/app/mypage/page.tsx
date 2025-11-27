@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiGet, apiPut } from "@/lib/api";
 import { useAuth } from "@/hooks/user/useAuth";
+import { formatCurrency } from "@/lib/utils";
 import { PRODUCT_STATUS } from "@/lib/constants";
 
 // UI 컴포넌트
@@ -110,7 +111,7 @@ const ProductListItem = ({
       </div>
       <div className="text-right">
         <p className="text-foreground text-lg font-bold">
-          ₩{price.toLocaleString()}
+          {formatCurrency(price)}
         </p>
         {subText && (
           <p className="text-muted-foreground mt-1 text-xs">{subText}</p>
@@ -143,48 +144,48 @@ export default function MyPage() {
   );
 
   // --- 1. 데이터 불러오기 ---
-    useEffect(() => {
-      const fetchUserInfo = async () => {
-        try {
-          const token = localStorage.getItem("accessToken");
-          if (!token) return; // 토큰이 없으면 그냥 리턴 (finally로 가서 로딩 끝남)
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        if (!token) return; // 토큰이 없으면 그냥 리턴 (finally로 가서 로딩 끝남)
 
-          const apiUser = await apiGet<ApiUserResponse>("/api/users/me");
+        const apiUser = await apiGet<ApiUserResponse>("/api/users/me");
 
-          // 리스트 데이터 세팅
-          setSellingProducts(apiUser.products ?? []);
-          setPurchasedProducts(apiUser.winners ?? []);
-          setPurchaseOngoingProducts(apiUser.productBids ?? []);
+        // 리스트 데이터 세팅
+        setSellingProducts(apiUser.products ?? []);
+        setPurchasedProducts(apiUser.winners ?? []);
+        setPurchaseOngoingProducts(apiUser.productBids ?? []);
 
-          // 프로필 데이터 가공
-          const fetchedUser: UserProfile = {
-            nickname: apiUser.nickname ?? INITIAL_USER.nickname,
-            joinDate: apiUser.createdAt
-              ? formatJoinDate(apiUser.createdAt)
-              : INITIAL_USER.joinDate,
-            rating: apiUser.rating ?? INITIAL_USER.rating,
-            reviews: apiUser.reviews ?? INITIAL_USER.reviews,
-            phoneNumber: apiUser.phoneNumber
-              ? String(apiUser.phoneNumber).trim()
-              : INITIAL_USER.phoneNumber,
-          };
+        // 프로필 데이터 가공
+        const fetchedUser: UserProfile = {
+          nickname: apiUser.nickname ?? INITIAL_USER.nickname,
+          joinDate: apiUser.createdAt
+            ? formatJoinDate(apiUser.createdAt)
+            : INITIAL_USER.joinDate,
+          rating: apiUser.rating ?? INITIAL_USER.rating,
+          reviews: apiUser.reviews ?? INITIAL_USER.reviews,
+          phoneNumber: apiUser.phoneNumber
+            ? String(apiUser.phoneNumber).trim()
+            : INITIAL_USER.phoneNumber,
+        };
 
-          setUser(fetchedUser);
-          setNicknameInput(fetchedUser.nickname);
-          setPhoneNumberInput(fetchedUser.phoneNumber);
-        } catch {
-          // 에러 시 초기화 (목데이터 "익명 사용자" 등 유지)
-          setUser(INITIAL_USER);
-          setNicknameInput(INITIAL_USER.nickname);
-          setPhoneNumberInput(INITIAL_USER.phoneNumber);
-        } finally {
-          // [중요] 성공하든 실패하든 로딩 상태 해제
-          setIsLoading(false);
-        }
-      };
+        setUser(fetchedUser);
+        setNicknameInput(fetchedUser.nickname);
+        setPhoneNumberInput(fetchedUser.phoneNumber);
+      } catch {
+        // 에러 시 초기화 (목데이터 "익명 사용자" 등 유지)
+        setUser(INITIAL_USER);
+        setNicknameInput(INITIAL_USER.nickname);
+        setPhoneNumberInput(INITIAL_USER.phoneNumber);
+      } finally {
+        // [중요] 성공하든 실패하든 로딩 상태 해제
+        setIsLoading(false);
+      }
+    };
 
-      fetchUserInfo();
-    }, [router]);
+    fetchUserInfo();
+  }, [router]);
 
   // --- 2. 프로필 수정 핸들러 ---
   const handleSave = async () => {

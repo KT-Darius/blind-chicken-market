@@ -3,29 +3,28 @@
 import Link from "next/link";
 import { Product } from "@/types";
 import { AlarmClock } from "lucide-react";
+import { formatCurrency, isAuctionExpired, getTimeRemainMs } from "@/lib/utils";
 
 export default function ProductCard({ product }: { product: Product }) {
   // 남은 일수 계산
   const calculateDaysLeft = () => {
-    const now = new Date();
-    const endDate = new Date(product.bidEndDate);
-    const diffTime = endDate.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffTime = getTimeRemainMs(product.bidEndDate);
 
-    if (diffDays < 0) return "경매 종료";
-    if (diffDays === 0) return "오늘 마감🔥";
+    // 초 단위까지 비교하여 경매 종료 판단
+    if (diffTime <= 0) return "경매 종료";
+
+    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffDays === 0) {
+      if (diffHours === 0) return "경매가 곧 마감됩니다";
+      return `${diffHours}시간 남음`;
+    }
     return `${diffDays}일 남음`;
   };
 
-  // 경매 종료 여부 확인
-  const isExpired = () => {
-    const now = new Date();
-    const endDate = new Date(product.bidEndDate);
-    const diffTime = endDate.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    // 오늘 마감이거나 미래면 흑백 처리하지 않음
-    return diffDays < 0;
-  };
+  // 경매 종료 여부 확인 (초 단위까지 비교)
+  const isExpired = () => isAuctionExpired(product.bidEndDate);
 
   return (
     <Link href={`/products/${product.id}`}>
@@ -49,7 +48,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
           <div className="space-y-1">
             <p className="text-foreground text-2xl font-bold break-all">
-              \{product.bidPrice.toLocaleString("ko-KR")}
+              {formatCurrency(product.bidPrice)}
             </p>
             <span className="text-muted-foreground flex items-center gap-1 text-xs font-medium">
               <AlarmClock size={14} /> {calculateDaysLeft()}

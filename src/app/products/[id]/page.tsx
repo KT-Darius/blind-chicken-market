@@ -6,6 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Product } from "@/types";
 import { apiGet } from "@/lib/api";
+import {
+  formatCurrency,
+  isAuctionExpired,
+  getTimeRemainMs,
+  formatKoreanTime,
+} from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { useAuth } from "@/hooks/user/useAuth";
@@ -201,20 +207,19 @@ export default function ProductDetail({
     return Math.max(magnitude / 10, 1000);
   };
 
-  // 경매 마감 여부 확인
-  const isAuctionExpired = () => {
+  // 경매 마감 여부 확인 (초 단위까지 비교)
+  const checkIsAuctionExpired = () => {
     if (!product) return false;
-    return new Date() > new Date(product.bidEndDate);
+    return isAuctionExpired(product.bidEndDate);
   };
 
   // 남은 시간 계산
   const getTimeRemaining = () => {
     if (!product) return null;
-    const now = new Date();
-    const endDate = new Date(product.bidEndDate);
-    const diffMs = endDate.getTime() - now.getTime();
+    const diffMs = getTimeRemainMs(product.bidEndDate);
 
-    if (diffMs < 0) return null; // 경매 종료
+    // 초 단위까지 비교하여 경매 종료 판단
+    if (diffMs <= 0) return null; // 경매 종료
 
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
 
@@ -232,7 +237,10 @@ export default function ProductDetail({
   };
 
   const handlePlaceBid = () => {
-    if (!bidAmount || isNaN(Number(bidAmount))) return;
+    if (!bidAmount || isNaN(Number(bidAmount))) {
+      setBidError("입찰가를 입력해주세요.");
+      return;
+    }
 
     const bidValue = Number(bidAmount);
     const minIncrement = product ? getMinBidIncrement(product.bidPrice) : 1000;
@@ -241,7 +249,7 @@ export default function ProductDetail({
     // 최소 입찰가 검증
     if (bidValue < minBidValue) {
       setBidError(
-        `최소 입찰가는 ₩${minBidValue.toLocaleString()}입니다. (최소 입찰 단위: ₩${minIncrement.toLocaleString()})`,
+        `최소 입찰가는 ${formatCurrency(minBidValue)}입니다. (최소 입찰 단위: ${formatCurrency(minIncrement)})`,
       );
       return;
     }
@@ -281,10 +289,9 @@ export default function ProductDetail({
     );
   }
 
-  // 현재 bidAmount에서 최소 입찰가 정보 추출
-  const currentBidAmount = Number(bidAmount);
-  const minBid = isNaN(currentBidAmount) ? product.bidPrice : currentBidAmount;
+  // 최소 입찰가 정보 추출
   const minBidIncrement = getMinBidIncrement(product.bidPrice);
+  const minBidValue = product.bidPrice + minBidIncrement;
 
   return (
     <main className="bg-background min-h-screen py-8 md:py-12">
@@ -344,7 +351,7 @@ export default function ProductDetail({
                 }}
                 transition={{ duration: 0.3 }}
               >
-                ₩{product.bidPrice.toLocaleString()}
+                {formatCurrency(product.bidPrice)}
               </motion.p>
             </div>
 
@@ -373,7 +380,7 @@ export default function ProductDetail({
                   최소 입찰가
                 </span>
                 <span className="text-foreground text-right font-medium break-all">
-                  ₩{minBid.toLocaleString()}
+                  {formatCurrency(minBidValue)}
                 </span>
               </div>
             </div>
@@ -388,10 +395,10 @@ export default function ProductDetail({
                   disabled={
                     !user ||
                     user?.email === product.user.email ||
-                    isAuctionExpired()
+                    checkIsAuctionExpired()
                   }
                 >
-                  {isAuctionExpired()
+                  {checkIsAuctionExpired()
                     ? "경매가 종료되었습니다"
                     : !user
                       ? "로그인이 필요합니다"
@@ -407,7 +414,7 @@ export default function ProductDetail({
                     입찰가
                   </label>
                   <p className="text-muted-foreground mt-1 text-xs">
-                    최소: ₩{minBid.toLocaleString()}
+                    최소: {formatCurrency(minBidValue)}
                   </p>
                   <input
                     type="number"
@@ -425,7 +432,7 @@ export default function ProductDetail({
                       }
                     }}
                     className="bg-background border-border text-foreground focus:ring-primary placeholder:text-muted-foreground mt-2 w-full rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none"
-                    min={minBid}
+                    min={minBidValue}
                     step={minBidIncrement}
                   />
                   {bidError && (
@@ -485,10 +492,10 @@ export default function ProductDetail({
                         >
                           <div className="min-w-0 flex-1">
                             <p className="text-foreground font-semibold break-all">
-                              ₩{bid.price.toLocaleString()}
+                              {formatCurrency(bid.price)}
                             </p>
                             <p className="text-muted-foreground text-xs">
-                              {new Date(bid.bidTime).toLocaleString("ko-KR")}
+                              {formatKoreanTime(bid.bidTime)}
                             </p>
                           </div>
                           <span className="text-muted-foreground ml-2 text-xs">
