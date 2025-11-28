@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Edit2 } from "lucide-react";
+import { Edit2, CreditCard } from "lucide-react"; 
 
 // --- 초기 데이터 및 타입 ---
 const INITIAL_USER = {
@@ -66,16 +66,16 @@ const getProductStatusLabel = (status?: string) => {
   return item ? item.label : status;
 };
 
-// --- [추가] 재사용 가능한 상품 리스트 아이템 컴포넌트 ---
-// 반복되는 리스트 UI를 하나로 통합했습니다.
+// --- 재사용 가능한 상품 리스트 아이템 컴포넌트 ---
 interface ProductItemProps {
   id: number | string;
   name: string;
   price: number;
-  status?: string; // 판매/구매 완료 상태 표시용
-  subText?: string; // "전체 입찰 횟수: 3" 등의 하단 텍스트
-  badgeText?: string; // "구매 완료", "판매 완료" 뱃지 텍스트
+  status?: string;
+  subText?: string;
+  badgeText?: string;
   linkPrefix?: string;
+  actionNode?: React.ReactNode; 
 }
 
 const ProductListItem = ({
@@ -86,38 +86,44 @@ const ProductListItem = ({
   subText,
   badgeText,
   linkPrefix = "/products",
+  actionNode,
 }: ProductItemProps) => (
-  <div className="hover:bg-muted border-border border-b p-4 transition-colors last:border-b-0">
+  <div className="hover:bg-muted/50 border-border flex items-center justify-between border-b p-4 transition-colors last:border-b-0">
     <Link
       href={`${linkPrefix}/${id}`}
-      className="flex items-center justify-between"
+      className="flex flex-1 items-center justify-between pr-4"
     >
-      <div className="flex-1">
-        <p className="text-foreground font-medium">{name}</p>
-        {(badgeText || status) && (
-          <div className="mt-2 flex items-center gap-2">
+      {/* 상품 정보 */}
+      <div>
+        <div className="flex items-center gap-2">
+            <p className="text-foreground font-medium">{name}</p>
             {badgeText && (
-              <Badge variant="secondary" className="text-xs">
-                {badgeText}
-              </Badge>
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
+                  {badgeText}
+                </Badge>
             )}
-            {status && (
-              <p className="text-muted-foreground text-xs">
-                상태: {getProductStatusLabel(status)}
-              </p>
-            )}
-          </div>
-        )}
+        </div>
+        <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+            {status && <span>{getProductStatusLabel(status)}</span>}
+            {status && subText && <span>•</span>}
+            {subText && <span>{subText}</span>}
+        </div>
       </div>
+      
+      {/* 가격 정보 */}
       <div className="text-right">
-        <p className="text-foreground text-lg font-bold">
+        <p className="text-foreground font-bold">
           {formatCurrency(price)}
         </p>
-        {subText && (
-          <p className="text-muted-foreground mt-1 text-xs">{subText}</p>
-        )}
       </div>
     </Link>
+
+    {/* 액션 버튼이 있을 경우 렌더링 */}
+    {actionNode && (
+        <div className="ml-4 pl-4 border-l border-border">
+            {actionNode}
+        </div>
+    )}
   </div>
 );
 
@@ -136,56 +142,68 @@ export default function MyPage() {
 
   // 상품 리스트 State
   const [sellingProducts, setSellingProducts] = useState<Product[]>([]);
-  const [purchaseOngoingProducts, setPurchaseOngoingProducts] = useState<
-    MypageProductBid[]
-  >([]);
-  const [purchasedProducts, setPurchasedProducts] = useState<WinnerDetails[]>(
-    [],
-  );
+  
+  // 구매 관련 State (3단계)
+  const [purchaseBidding, setPurchaseBidding] = useState<MypageProductBid[]>([]);
+  const [purchasePending, setPurchasePending] = useState<WinnerDetails[]>([]);
+  const [purchaseCompleted, setPurchaseCompleted] = useState<WinnerDetails[]>([]); 
 
-  // --- 1. 데이터 불러오기 ---
-  useEffect(() => {
-    const fetchUserInfo = async () => {
-      try {
-        const token = localStorage.getItem("accessToken");
-        if (!token) return; // 토큰이 없으면 그냥 리턴 (finally로 가서 로딩 끝남)
 
-        const apiUser = await apiGet<ApiUserResponse>("/api/users/me");
+    // --- 1. 데이터 불러오기 ---
+    useEffect(() => {
+      const fetchUserInfo = async () => {
+        try {
+          const token = localStorage.getItem("accessToken");
+          if (!token) {
+            // 토큰이 없으면 로딩만 해제하고 함수 종료
+            setIsLoading(false); 
+            return;
+          }
 
-        // 리스트 데이터 세팅
-        setSellingProducts(apiUser.products ?? []);
-        setPurchasedProducts(apiUser.winners ?? []);
-        setPurchaseOngoingProducts(apiUser.productBids ?? []);
+          const apiUser = await apiGet<ApiUserResponse>("/api/users/me");
 
-        // 프로필 데이터 가공
-        const fetchedUser: UserProfile = {
-          nickname: apiUser.nickname ?? INITIAL_USER.nickname,
-          joinDate: apiUser.createdAt
-            ? formatJoinDate(apiUser.createdAt)
-            : INITIAL_USER.joinDate,
-          rating: apiUser.rating ?? INITIAL_USER.rating,
-          reviews: apiUser.reviews ?? INITIAL_USER.reviews,
-          phoneNumber: apiUser.phoneNumber
-            ? String(apiUser.phoneNumber).trim()
-            : INITIAL_USER.phoneNumber,
-        };
+          // [판매 목록] 서버 데이터 사용
+          setSellingProducts(apiUser.products ?? []);
 
-        setUser(fetchedUser);
-        setNicknameInput(fetchedUser.nickname);
-        setPhoneNumberInput(fetchedUser.phoneNumber);
-      } catch {
-        // 에러 시 초기화 (목데이터 "익명 사용자" 등 유지)
-        setUser(INITIAL_USER);
-        setNicknameInput(INITIAL_USER.nickname);
-        setPhoneNumberInput(INITIAL_USER.phoneNumber);
-      } finally {
-        // [중요] 성공하든 실패하든 로딩 상태 해제
-        setIsLoading(false);
-      }
-    };
+          // [구매 목록 분리 로직]
+          setPurchaseBidding(apiUser.productBids ?? []);
 
-    fetchUserInfo();
-  }, [router]);
+          // [구매 대기] 서버에서 받은 낙찰자 목록(winners) 사용
+          setPurchasePending(apiUser.winners ?? []); 
+          
+          // [구매 완료] 현재 백엔드 데이터로 구분 불가하므로 빈 배열
+          setPurchaseCompleted([]); 
+
+          // 프로필 데이터 가공
+          const fetchedUser: UserProfile = {
+            nickname: apiUser.nickname ?? INITIAL_USER.nickname,
+            joinDate: apiUser.createdAt
+              ? formatJoinDate(apiUser.createdAt)
+              : INITIAL_USER.joinDate,
+            rating: apiUser.rating ?? INITIAL_USER.rating,
+            reviews: apiUser.reviews ?? INITIAL_USER.reviews,
+            phoneNumber: apiUser.phoneNumber
+              ? String(apiUser.phoneNumber).trim()
+              : INITIAL_USER.phoneNumber,
+          };
+
+          setUser(fetchedUser);
+          setNicknameInput(fetchedUser.nickname);
+          setPhoneNumberInput(fetchedUser.phoneNumber);
+        } catch (e) {
+          // 에러 발생 시 초기화
+          console.error("Failed to fetch user data:", e);
+          setUser(INITIAL_USER);
+          setNicknameInput(INITIAL_USER.nickname);
+          setPhoneNumberInput(INITIAL_USER.phoneNumber);
+        } finally {
+          // 성공하든 실패하든 로딩 상태 해제
+          setIsLoading(false);
+        }
+      };
+
+      fetchUserInfo();
+    }, [router]);
 
   // --- 2. 프로필 수정 핸들러 ---
   const handleSave = async () => {
@@ -204,7 +222,6 @@ export default function MyPage() {
       });
 
       alert("프로필이 성공적으로 변경되었습니다.");
-
       setUser((prev) => ({
         ...prev,
         nickname: trimmedNick,
@@ -213,19 +230,61 @@ export default function MyPage() {
       updateNickname(trimmedNick);
       setIsModalOpen(false);
     } catch {
-      alert("프로필 수정에 실패했습니다. 다시 시도해주세요.");
+      alert("프로필 수정에 실패했습니다.");
     }
   };
 
-  // --- 3. 데이터 필터링 최적화 (useMemo) ---
-  // 렌더링 될 때마다 매번 필터링하지 않고, sellingProducts가 변할 때만 계산합니다.
-  const { ongoing: sellingOngoing, completed: sellingCompleted } =
+  // --- 3. 판매 목록 필터링 (3단계) ---
+  const { bidding: sellingBidding, pending: sellingPending, completed: sellingCompleted } =
     useMemo(() => {
+      // 1. 입찰 중 (판매 중)
+      const bidding = sellingProducts.filter((p) => p.bidStatus !== "COMPLETED");
+
+      // 2. 판매 대기 (낙찰됨) - 모두 대기로 분류
+      const pending = sellingProducts.filter((p) => p.bidStatus === "COMPLETED");
+
+      // 3. 판매 완료 (결제됨) - 현재 구분 불가
+      const completed: Product[] = [];
+
       return {
-        ongoing: sellingProducts.filter((p) => p.bidStatus !== "COMPLETED"),
-        completed: sellingProducts.filter((p) => p.bidStatus === "COMPLETED"),
+        bidding: bidding,
+        pending: pending,
+        completed: completed,
       };
     }, [sellingProducts]);
+
+
+  // --- 4. 결제하기 버튼 핸들러 ---
+  const handlePayment = (productId: number | string, productName: string, price: number) => {
+    // 결제 페이지로 이동 (동적 라우팅 적용)
+    if (!confirm(`'${productName}' 상품의 결제 페이지로 이동하시겠습니까?`)) return;
+
+    // 예: /payment/1462 (productId를 orderId 자리에 넣어 보냄)
+    router.push(`/payment/${productId}`);
+  };
+  
+  // [NEW UTILITY] 0이면 연하게, 1 이상이면 강조하는 클래스 반환
+  const getStatClass = (count: number, isPrimary: boolean = false, isTitle: boolean) => {
+    const isBold = count > 0;
+    
+    // 타이틀 (예: '전체', '입찰 중')
+    if (isTitle) {
+      if (isBold) {
+        // 1 이상: primary(결제대기) 또는 foreground(나머지)로 강조
+        return isPrimary ? "text-primary font-bold" : "text-foreground font-bold";
+      } else {
+        return "text-muted-foreground"; // 0일 때 연하게
+      }
+    } 
+    
+    // 숫자 카운트 (예: '3', '0')
+    if (isBold) {
+      return isPrimary ? "text-primary mt-1 text-xl font-bold" : "text-foreground mt-1 text-xl font-semibold";
+    } else {
+      return "text-muted-foreground mt-1 text-xl font-semibold"; // 0일 때 연하게
+    }
+  };
+
 
   return (
     <main className="bg-background min-h-screen py-8 md:py-12">
@@ -235,13 +294,11 @@ export default function MyPage() {
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1">
               {isLoading ? (
-                // 로딩 중일 때: 회색 박스(스켈레톤) 깜빡임
                 <div className="space-y-2">
                   <Skeleton className="h-8 w-48" />
                   <Skeleton className="h-4 w-32" />
                 </div>
               ) : (
-                // 로딩 끝남: 실제 닉네임과 가입일 표시
                 <>
                   <h1 className="text-foreground text-2xl font-bold md:text-3xl">
                     {user.nickname}
@@ -265,36 +322,30 @@ export default function MyPage() {
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                  <DialogTitle>프로필 수정</DialogTitle>
-                  <DialogDescription>
-                    새 정보를 입력하고 변경하기 버튼을 눌러주세요.
-                  </DialogDescription>
+                    <DialogTitle>프로필 수정</DialogTitle>
+                    <DialogDescription>새 정보를 입력해주세요.</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="nickname" className="text-right">
-                      닉네임
-                    </Label>
+                    <Label htmlFor="nickname" className="text-right">닉네임</Label>
                     <Input
                       id="nickname"
                       value={nicknameInput}
                       maxLength={8}
                       onChange={(e) => setNicknameInput(e.target.value)}
                       className="col-span-3"
-                      placeholder="새 닉네임 (8자 이하)"
+                      placeholder="새 닉네임"
                     />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="phoneNumber" className="text-right">
-                      전화번호
-                    </Label>
+                    <Label htmlFor="phoneNumber" className="text-right">전화번호</Label>
                     <Input
                       id="phoneNumber"
                       type="tel"
                       value={phoneNumberInput}
                       onChange={(e) => setPhoneNumberInput(e.target.value)}
                       className="col-span-3"
-                      placeholder="예: 010-1234-5678"
+                      placeholder="010-0000-0000"
                     />
                   </div>
                 </div>
@@ -306,81 +357,117 @@ export default function MyPage() {
           </div>
         </div>
 
-        {/* === 구매 내역 섹션 === */}
+        {/* === 구매 내역 섹션 (3단계 UI 적용) === */}
         <section className="mb-10">
           <h2 className="mb-4 text-lg font-semibold">구매 내역</h2>
 
           {/* 요약 바 */}
           <div className="border-border bg-card mb-6 rounded-lg border p-4">
-            <div className="grid grid-cols-3 text-center text-sm">
-              <div>
-                <p className="text-muted-foreground">전체</p>
-                <p className="text-foreground mt-1 text-xl font-semibold">
-                  {purchasedProducts.length + purchaseOngoingProducts.length}
+            <div className="grid grid-cols-4 text-center text-sm">
+              
+              {/* 1. 전체 (우측에 구분선 유지) */}
+              <div className="border-border border-r">
+                <p className={getStatClass(purchaseBidding.length + purchasePending.length + purchaseCompleted.length, false, true)}>전체</p>
+                <p className={getStatClass(purchaseBidding.length + purchasePending.length + purchaseCompleted.length, false, false)}>
+                  {/* 전체 수량 합산 */}
+                  {purchaseBidding.length + purchasePending.length + purchaseCompleted.length}
                 </p>
               </div>
-              <div className="border-border border-l">
-                <p className="text-muted-foreground">구매 중</p>
-                <p className="text-foreground mt-1 text-xl font-semibold">
-                  {purchaseOngoingProducts.length}
+              
+              {/* 2. 입찰 중 (구분선 제거) */}
+              <div> 
+                <p className={getStatClass(purchaseBidding.length, false, true)}>입찰 중</p>
+                <p className={getStatClass(purchaseBidding.length, false, false)}>
+                  {purchaseBidding.length}
                 </p>
               </div>
-              <div>
-                <p className="text-muted-foreground">구매 완료</p>
-                <p className="text-foreground mt-1 text-xl font-semibold">
-                  {purchasedProducts.length}
+
+              {/* 3. 결제 대기 (강조 제거 및 구분선 제거) */}
+              <div> 
+                {/* 강조 스타일 제거, 기본 스타일 적용 */}
+                <p className={getStatClass(purchasePending.length, true, true)}>결제 대기</p> 
+                <p className={getStatClass(purchasePending.length, true, false)}>
+                  {purchasePending.length}
+                </p>
+              </div>
+
+              {/* 4. 구매 완료 (구분선 없음) */}
+              <div> 
+                <p className={getStatClass(purchaseCompleted.length, false, true)}>구매 완료</p>
+                <p className={getStatClass(purchaseCompleted.length, false, false)}>
+                  {purchaseCompleted.length}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* 목록: 구매 중 */}
+          {/* 2. 입찰 중 목록 */}
           <div className="mb-6">
             <h3 className="text-muted-foreground mb-3 text-sm font-medium">
-              구매 중
+              입찰 중
             </h3>
             <div className="border-border bg-card rounded-lg border">
-              {purchaseOngoingProducts.length === 0 ? (
+              {purchaseBidding.length === 0 ? (
                 <div className="py-8 text-center">
-                  <p className="text-muted-foreground mb-4">
-                    현재 구매 중인 상품이 없습니다.
-                  </p>
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="rounded-lg bg-transparent"
-                  >
-                    <Link href="/">상품 둘러보러 가기</Link>
-                  </Button>
+                  <p className="text-muted-foreground text-sm">현재 입찰 중인 상품이 없습니다.</p>
                 </div>
               ) : (
-                purchaseOngoingProducts.map((product) => (
+                purchaseBidding.map((product) => (
                   <ProductListItem
                     key={product.productId}
                     id={product.productId}
                     name={product.productName}
                     price={product.price}
-                    subText={`전체 입찰 횟수: ${product.bidCount}`}
+                    subText={`내 입찰 횟수: ${product.bidCount}`}
                   />
                 ))
               )}
             </div>
           </div>
 
-          {/* 목록: 구매 완료 */}
+                    {/* 3 . 결제 대기 목록 (버튼 있음) */}
+          {purchasePending.length > 0 && (
+            <div className="mb-8">
+                <h3 className="text-primary mb-3 text-sm font-bold flex items-center gap-2">
+                  결제 대기
+                </h3>
+                {/* 배경색 조건부 변경 */}
+                <div className={`rounded-lg border ${
+                    purchasePending.length > 0 ? "border-primary/20 bg-primary/5" : "border-border bg-card"
+                }`}>
+                    {purchasePending.map((product) => (
+                        <ProductListItem
+                            key={product.productId}
+                            id={product.productId}
+                            name={product.productName}
+                            price={product.bidPrice}
+                            subText="낙찰 성공! 결제가 필요합니다"
+                            actionNode={
+                                <Button 
+                                    size="sm" 
+                                    onClick={() => handlePayment(product.productId, product.productName, product.bidPrice)}
+                                >
+                                    결제하기
+                                </Button>
+                            }
+                        />
+                    ))}
+                </div>
+            </div>
+          )}
+
+          {/* 4. 구매 완료 목록 */}
           <div>
             <h3 className="text-muted-foreground mb-3 text-sm font-medium">
               구매 완료
             </h3>
             <div className="border-border bg-card rounded-lg border">
-              {purchasedProducts.length === 0 ? (
+              {purchaseCompleted.length === 0 ? (
                 <div className="py-8 text-center">
-                  <p className="text-muted-foreground">
-                    구매 완료된 상품이 없습니다.
-                  </p>
+                  <p className="text-muted-foreground text-sm">구매 완료된 상품이 없습니다.</p>
                 </div>
               ) : (
-                purchasedProducts.map((product) => (
+                purchaseCompleted.map((product) => (
                   <ProductListItem
                     key={product.productId}
                     id={product.productId}
@@ -388,7 +475,7 @@ export default function MyPage() {
                     price={product.bidPrice}
                     status={product.productStatus}
                     badgeText="구매 완료"
-                    subText="종료"
+                    subText="배송 준비중"
                   />
                 ))
               )}
@@ -396,55 +483,62 @@ export default function MyPage() {
           </div>
         </section>
 
-        {/* === 판매 내역 섹션 === */}
+        {/* === 판매 내역 섹션 (3단계 UI 적용) === */}
         <section className="mb-10">
           <h2 className="mb-4 text-lg font-semibold">판매 내역</h2>
 
-          {/* 요약 바 */}
+          {/* 1. 요약 바 */}
           <div className="border-border bg-card mb-6 rounded-lg border p-4">
-            <div className="grid grid-cols-3 text-center text-sm">
-              <div>
-                <p className="text-muted-foreground">전체</p>
-                <p className="text-foreground mt-1 text-xl font-semibold">
-                  {sellingProducts.length}
+            <div className="grid grid-cols-4 text-center text-sm"> {/* grid-cols-4로 변경 */}
+              
+              {/* 1. 전체 (NEW - 우측에 구분선 유지) */}
+              <div className="border-border border-r">
+                <p className={getStatClass(sellingBidding.length + sellingPending.length + sellingCompleted.length, false, true)}>전체</p>
+                <p className={getStatClass(sellingBidding.length + sellingPending.length + sellingCompleted.length, false, false)}>
+                  {sellingBidding.length + sellingPending.length + sellingCompleted.length}
                 </p>
               </div>
-              <div className="border-border border-l">
-                <p className="text-muted-foreground">판매 중</p>
-                <p className="text-foreground mt-1 text-xl font-semibold">
-                  {sellingOngoing.length}
+              
+              {/* 2. 입찰 중 (구분선 제거) */}
+              <div> 
+                <p className={getStatClass(sellingBidding.length, false, true)}>입찰 중</p>
+                <p className={getStatClass(sellingBidding.length, false, false)}>
+                  {sellingBidding.length}
                 </p>
               </div>
-              <div>
-                <p className="text-muted-foreground">판매 완료</p>
-                <p className="text-foreground mt-1 text-xl font-semibold">
+
+              {/* 3. 판매 대기 (조건부 강조 유지, 구분선 제거) */}
+              <div> 
+                <p className={getStatClass(sellingPending.length, true, true)}>입금 대기</p>
+                <p className={getStatClass(sellingPending.length, true, false)}>
+                  {sellingPending.length}
+                </p>
+              </div>
+
+              {/* 4. 판매 완료 (구분선 제거) */}
+              <div> 
+                <p className={getStatClass(sellingCompleted.length, false, true)}>판매 완료</p>
+                <p className={getStatClass(sellingCompleted.length, false, false)}>
                   {sellingCompleted.length}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* 목록: 판매 중 */}
+          {/* 2. 입찰 중 목록 */}
           <div className="mb-6">
             <h3 className="text-muted-foreground mb-3 text-sm font-medium">
-              판매 중
+              입찰 중
             </h3>
             <div className="border-border bg-card rounded-lg border">
-              {sellingOngoing.length === 0 ? (
+              {sellingBidding.length === 0 ? (
                 <div className="py-8 text-center">
                   <p className="text-muted-foreground mb-4">
-                    현재 판매 중인 상품이 없습니다.
+                    현재 입찰 중인 상품이 없습니다.
                   </p>
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="rounded-lg bg-transparent"
-                  >
-                    <Link href="/products/create">상품 등록하러 가기</Link>
-                  </Button>
                 </div>
               ) : (
-                sellingOngoing.map((product) => (
+                sellingBidding.map((product) => (
                   <ProductListItem
                     key={product.id}
                     id={product.id}
@@ -458,7 +552,42 @@ export default function MyPage() {
             </div>
           </div>
 
-          {/* 목록: 판매 완료 */}
+          {/* 3. 판매 대기 목록 (강조 스타일 적용) */}
+          <div className="mb-6">
+            {/* H3 텍스트 색상 조건부 변경 */}
+            <h3 className={`mb-3 text-sm font-medium flex items-center gap-2 ${
+                sellingPending.length > 0 ? "text-primary font-bold" : "text-muted-foreground"
+            }`}>
+              입금 대기
+            </h3>
+            {/* DIV 배경색 조건부 변경 */}
+            <div className={`rounded-lg border ${
+              sellingPending.length > 0
+                ? "border-primary/20 bg-primary/5" 
+                : "border-border bg-card"
+            }`}> 
+              {sellingPending.length === 0 ? (
+                <div className="py-8 text-center">
+                  <p className="text-muted-foreground">
+                    결제 확인을 기다리는 상품이 없습니다.
+                  </p>
+                </div>
+              ) : (
+                sellingPending.map((product) => (
+                  <ProductListItem
+                    key={product.id}
+                    id={product.id}
+                    name={product.name}
+                    price={product.bidPrice ?? product.startPrice}
+                    status={product.productStatus}
+                    subText="구매자 결제 대기 중"
+                  />
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* 4. 판매 완료 목록 */}
           <div>
             <h3 className="text-muted-foreground mb-3 text-sm font-medium">
               판매 완료
@@ -479,7 +608,7 @@ export default function MyPage() {
                     price={product.bidPrice ?? product.startPrice}
                     status={product.productStatus}
                     badgeText="판매 완료"
-                    subText="종료"
+                    subText="결제 완료됨"
                   />
                 ))
               )}
