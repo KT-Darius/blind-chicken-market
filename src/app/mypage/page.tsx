@@ -389,17 +389,17 @@ export default function MyPage() {
               {/* 3. 결제 대기 (강조 제거 및 구분선 제거) */}
               <div> 
                 {/* 강조 스타일 제거, 기본 스타일 적용 */}
-                <p className={getStatClass(purchasePending.length, true, true)}>결제 대기</p> 
-                <p className={getStatClass(purchasePending.length, true, false)}>
-                  {purchasePending.length}
+                <p className={getStatClass(orders.filter(order => order.orderStatus === "PAYMENT_PENDING").length, true, true)}>결제 대기</p> 
+                <p className={getStatClass(orders.filter(order => order.orderStatus === "PAYMENT_PENDING").length, true, false)}>
+                  {orders.filter(order => order.orderStatus === "PAYMENT_PENDING").length}
                 </p>
               </div>
 
               {/* 4. 구매 완료 (구분선 없음) */}
               <div> 
-                <p className={getStatClass(purchaseCompleted.length, false, true)}>구매 완료</p>
-                <p className={getStatClass(purchaseCompleted.length, false, false)}>
-                  {purchaseCompleted.length}
+                <p className={getStatClass(orders.filter(order => order.orderStatus === "PAID").length, false, true)}>구매 완료</p>
+                <p className={getStatClass(orders.filter(order => order.orderStatus === "PAID").length, false, false)}>
+                  {orders.filter(order => order.orderStatus === "PAID").length}
                 </p>
               </div>
             </div>
