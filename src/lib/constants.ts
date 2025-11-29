@@ -26,5 +26,6 @@ export const PRODUCT_STATUS = [
 export const BID_STATUS = [
   { label: "미입찰", value: "NOT_BIDDED" },
   { label: "입찰중", value: "BIDDED" },
+  { label: "낙찰완료", value: "PAYMENT_WAITING"},
   { label: "종료", value: "COMPLETED" },
 ];
