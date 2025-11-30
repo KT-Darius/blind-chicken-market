@@ -28,37 +28,28 @@
 - RESTful API 설계 및 구현
 - 상품 등록 / 수정 / 삭제 / 조회 (CRUD)
 - 사용자 회원가입 및 로그인 (NextAuth)
-- Prisma ORM 기반 데이터베이스 연동
+- 데이터베이스 연동
 - TypeScript를 활용한 타입 안정성 확보
-
-### 💎 추가 기능 (가산점)
-
-- 상품 경매 시스템 (입찰, 남은 시간 표시, 낙찰 처리)
-- 실시간 업데이트 (Socket.io or Pusher)
-- 사용자 리뷰 및 평점
-- 결제 및 주문 처리 (Toss, Stripe 등 연동)
-- 관리자 페이지 (상품/회원 관리)
-- 다크 모드 지원 / 반응형 디자인 / SEO 최적화
 
 ---
 
 ## 🧱 기술 스택
 
-| 구분                | 사용 기술                                                  |
+| 구분                | 사용 기술                                                   |
 | ------------------- | ---------------------------------------------------------- |
 | Frontend            | Next.js, TypeScript, Tailwind CSS, shadcn/ui, Axios        |
 | Backend             | Spring Boot, STOMP (WebSocket), JPA (Java Persistence API) |
-| DB                  | PostgreSQL                                                 |
-| Server / Deployment | GitHub Actions, Jenkins, AWS EC2, AWS EKS                  |
+| DB                  | PostgreSQL, Redis(NoSQL)                                   |
+| Server / Deployment | AWS EC2, Route53 / Caddy, CI/CD(Cronjob/Systemd)           |
 
 ---
 
 ## 🪜 개발 목표
 
 - UI/UX 설계 및 반응형 구현
-- RESTful API 설계 및 Prisma 기반 DB 구축
+- RESTful API 설계 및 DB 구축
 - 인증 / 권한 / 세션 관리
-- 상품 등록 → 입찰 → 낙찰 → 결제 → 리뷰까지의 흐름 완성
+- 상품 등록 → 입찰 → 낙찰 → 결제 까지의 흐름 완성
 - TypeScript로 안정적 코드베이스 유지
 
 ---
@@ -68,9 +59,9 @@
 | 항목         | 설명                                 |
 | ------------ | ------------------------------------ |
 | README       | 프로젝트 개요 및 실행 방법           |
-| API 문서     | Postman / Swagger 기반 API 명세      |
-| ERD          | DB 관계 구조 (Prisma ERD or Draw.io) |
-| 와이어프레임 | v0.dev / Figma 디자인 시안           |
+| API 문서     | http://www.ktdarius.shop:8080/swagger-ui/index.html#/product-controller/createProduct      |
+| ERD          | https://www.erdcloud.com/ |
+| 와이어프레임 | v0.dev 디자인 시안 https://v0.app/chat/blind-chicken-market-spaJeozaobA           |
 | 시연 영상    | (추후 추가)                          |
 
 ---
@@ -99,22 +90,10 @@ npm run dev
 
 | 이름   | 역할          | 담당                                                         |
 | ------ | ------------- | ------------------------------------------------------------ |
-| 남경진 | PM / Frontend | 프론트엔드 구조 설계, 주요 컴포넌트 구현, 상태 관리,문서정리 |
-| 이유진 | Backend       | 실시간 경매 로직(WebSocket), 결제 프로세스, 서버 로직        |
-| 정성훈 | Backend       | 인프라·CI/CD·보안(JWT/OAuth), 배포 자동화                    |
-| 최태웅 | Frontend      | UI 컴포넌트 구현, 반응형 UX, 코드 품질 및 테스트             |
-
----
-
-## 📜 GitHub 커밋
-
-| prefix    | 의미                                 |
-| --------- | ------------------------------------ |
-| feat:     | 새로운 기능 추가                     |
-| fix:      | 버그 수정                            |
-| refactor: | 코드 구조 개선 (기능 변화 없음)      |
-| style:    | 포맷팅, CSS, 세미콜론 등 스타일 변경 |
-| chore:    | 빌드, 설정, 의존성 등 기타 변경      |
+| 남경진 | PM / Frontend | 프론트엔드 구조 설계, 핵심 컴포넌트 구현, 페이지 레이아웃·스타일링 및 프로젝트 관리 |
+| 이유진 | Backend       | 실시간 경매 로직(WebSocket), 결제·보안 로직 구현과 서버 디버깅 |
+| 정성훈 | DevOps        | 인프라·CI/CD·보안(JWT), 배포 자동화                          |
+| 최태웅 | Frontend      | UI 컴포넌트 구현, 반응형 UX, 코드 품질 및 테스트              |
 
 ---
 

@@ -2,8 +2,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "./useAuth";
-import { apiPost, apiGet, setAccessToken } from "@/lib/api";
-import { SignInResponse, User } from "@/types";
+import { apiPost, setAccessToken } from "@/lib/api";
+import { SignInResponse, JWTPayload, User } from "@/types";
+import { decodeJWT } from "@/lib/utils";
 
 export function useLoginForm() {
   const router = useRouter();
@@ -30,7 +31,7 @@ export function useLoginForm() {
     setIsLoading(true);
 
     try {
-      // --- 1단계: 로그인 API 호출 ---
+      // 1단계: 로그인 API 호출
       const loginResponse = await apiPost<SignInResponse>("/api/auth/sign-in", {
         email,
         password,
@@ -41,28 +42,40 @@ export function useLoginForm() {
         throw new Error("로그인 응답에 accessToken이 없습니다.");
       }
 
-      // --- [변경] 2단계: Access Token 설정 및 저장 ---
+      // 2단계: JWT 토큰 디코딩하여 닉네임 추출
+      const payload = decodeJWT<JWTPayload>(accessToken);
+      if (!payload || !payload.nickname) {
+        throw new Error("토큰에서 사용자 정보를 읽을 수 없습니다.");
+      }
 
-      // 1. API 유틸리티에 토큰 설정 (즉시 사용을 위해 메모리에 세팅)
+      // 3단계: Access Token 설정 및 저장
       setAccessToken(accessToken);
-
-      // 2. 로컬 스토리지에 토큰 영구 저장 (새로고침 시 유지를 위해 추가됨)
       localStorage.setItem("accessToken", accessToken);
 
-      // --- 3단계: 유저 정보 API 호출 (Access Token 사용) ---
-      // 위에서 setAccessToken을 했기 때문에 헤더에 토큰이 포함되어 전송됩니다.
-      const userData = await apiGet<User>("/api/users/me");
+      // 4단계: JWT에서 추출한 정보로 User 객체 생성
+      const userData: User = {
+        id: 0, // JWT에 id가 없으므로 임시값 (필요시 /api/users/me 호출 가능)
+        email: payload.sub,
+        nickname: payload.nickname,
+        role: payload.role === "ROLE_USER" ? "USER" : "ADMIN",
+        phoneNumber: "", // JWT에 없는 정보
+      };
 
-      // --- 4단계: useAuth에 토큰과 유저 정보 저장 (Context 상태 업데이트) ---
+      // 5단계: useAuth에 토큰과 유저 정보 저장
       login(accessToken, userData);
 
       router.push("/");
     } catch (err) {
       const error = err as Error;
-      if (error.message.includes("401") || error.message.includes("404")) {
+      // 로그인 실패 시 모두 동일한 메시지 표시 (보안상 이유)
+      if (
+        error.message.includes("401") ||
+        error.message.includes("404") ||
+        error.message.includes("엔티티")
+      ) {
         setError("이메일 또는 비밀번호가 올바르지 않습니다.");
       } else {
-        setError(error.message || "알 수 없는 오류가 발생했습니다.");
+        setError(error.message || "로그인에 실패했습니다. 다시 시도해주세요.");
       }
     } finally {
       setIsLoading(false);

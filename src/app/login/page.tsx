@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { apiPost, apiGet, setAccessToken } from "@/lib/api";
+import { apiPost } from "@/lib/api";
 import { useAuth } from "@/hooks/user/useAuth";
-import { SignInResponse, User } from "@/types";
+import { useLoginForm } from "@/hooks/user/useLoginForm";
 import {
   Dialog,
   DialogContent,
@@ -19,11 +19,9 @@ import {
 
 export default function Login() {
   const router = useRouter();
-  const { user, login } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
+  const { email, password, error, isLoading, handleChange, handleSubmit } =
+    useLoginForm();
 
   //비밀번호 재설정시
   const [isResetOpen, setIsResetOpen] = useState(false);
@@ -47,10 +45,9 @@ export default function Login() {
       });
 
       alert("이메일이 성공적으로 전송되었습니다. 메일창을 확인해주세요.");
-      
+
       setIsResetOpen(false);
       setResetEmail("");
-      
     } catch (error) {
       console.error(error);
       alert("이메일 전송에 실패했습니다. 입력한 이메일을 다시 확인해주세요.");
@@ -64,42 +61,7 @@ export default function Login() {
     if (user) {
       router.push("/");
     }
-  }, [user, router]); // user 상태가 변경될 때마다 체크
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
-
-    try {
-      const loginResponse = await apiPost<SignInResponse>("/api/auth/sign-in", {
-        email,
-        password,
-      });
-      const { accessToken } = loginResponse;
-      if (!accessToken) {
-        throw new Error("로그인 응답에 accessToken이 없습니다.");
-      }
-
-      // Access Token을 전역으로 설정
-      setAccessToken(accessToken);
-
-      const userData = await apiGet<User>("/api/users/me");
-      login(accessToken, userData);
-
-      router.push("/");
-    } catch (err) {
-      console.error(err);
-      const error = err as Error;
-      if (error.message.includes("401") || error.message.includes("404")) {
-        setError("이메일 또는 비밀번호가 올바르지 않습니다.");
-      } else {
-        setError("로그인에 실패했습니다. 다시 시도해주세요.");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [user, router]);
 
   // user가 있거나(로그인됨) 로딩 중일 때 폼 숨기기
   if (user || isLoading) {
@@ -131,7 +93,7 @@ export default function Login() {
         )}
 
         {/* Form */}
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="text-foreground mb-2 block text-sm font-medium">
               이메일
@@ -140,7 +102,7 @@ export default function Login() {
               type="email"
               name="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={handleChange}
               placeholder="your@example.com"
               autoComplete="email"
               className="bg-background border-border text-foreground placeholder-muted-foreground focus:ring-primary w-full rounded-lg border px-4 py-3 transition-all focus:ring-2 focus:outline-none"
@@ -157,7 +119,7 @@ export default function Login() {
               type="password"
               name="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={handleChange}
               placeholder="••••••••"
               autoComplete="current-password"
               className="bg-background border-border text-foreground placeholder-muted-foreground focus:ring-primary w-full rounded-lg border px-4 py-3 transition-all focus:ring-2 focus:outline-none"
@@ -190,11 +152,14 @@ export default function Login() {
           <Dialog open={isResetOpen} onOpenChange={setIsResetOpen}>
             {/* 버튼 역할 (누르면 모달 열림) */}
             <DialogTrigger asChild>
-              <button type="button" className="text-primary block w-full text-sm font-medium hover:underline text-center">
+              <button
+                type="button"
+                className="text-primary block w-full text-center text-sm font-medium hover:underline"
+              >
                 비밀번호를 잊으셨나요?
               </button>
             </DialogTrigger>
-            
+
             {/* 모달창 내용 */}
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
@@ -203,7 +168,7 @@ export default function Login() {
                   비밀번호 재설정 링크를 확인할 이메일 주소를 입력해주세요.
                 </DialogDescription>
               </DialogHeader>
-              
+
               <div className="space-y-4 py-4">
                 <input
                   type="email"
@@ -212,11 +177,11 @@ export default function Login() {
                   placeholder="your@example.com"
                   className="bg-background border-border text-foreground placeholder-muted-foreground focus:ring-primary w-full rounded-lg border px-4 py-3 transition-all focus:ring-2 focus:outline-none"
                 />
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   className="w-full"
                   onClick={handleResetPassword}
-                  disabled={!resetEmail || isResetLoading} 
+                  disabled={!resetEmail || isResetLoading}
                 >
                   {/* 로딩 중이면 아이콘 보여주기 */}
                   {isResetLoading ? (

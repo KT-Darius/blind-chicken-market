@@ -59,3 +59,36 @@ export function formatKoreanTime(dateString: string | Date): string {
     return "시간 정보 오류";
   }
 }
+
+/**
+ * JWT 토큰의 payload를 디코딩합니다.
+ * @param token - JWT 액세스 토큰
+ * @returns 디코딩된 payload 객체 또는 null
+ */
+export function decodeJWT<T = Record<string, unknown>>(
+  token: string,
+): T | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) {
+      return null;
+    }
+
+    const payload = parts[1];
+    // Base64 URL 디코딩 (- 를 +로, _ 를 /로 변환)
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+
+    // atob로 Base64 디코딩 후 UTF-8로 변환 (한글 지원)
+    const decoded = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(""),
+    );
+
+    return JSON.parse(decoded) as T;
+  } catch (error) {
+    console.error("JWT 디코딩 실패:", error);
+    return null;
+  }
+}

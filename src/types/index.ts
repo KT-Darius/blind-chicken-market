@@ -43,6 +43,16 @@ export interface SignInResponse {
   // refreshToken은 HttpOnly 쿠키로 전달되므로 응답 바디에 포함하지 않음
 }
 
+// JWT 토큰 페이로드
+export interface JWTPayload {
+  sub: string; // 이메일
+  role: string; // 권한
+  nickname: string; // 닉네임
+  type: string; // 토큰 타입
+  iat: number; // 발급 시간
+  exp: number; // 만료 시간
+}
+
 // 토큰 재발급 응답
 export interface ReissueResponse {
   accessToken: string;
@@ -149,6 +159,6 @@ export type Order = {
   productName: string;
   bidPrice: number;
   orderStatus: OrderStatus;
-}
+};
 
 export type OrderStatus = "PAYMENT_PENDING" | "PAID";

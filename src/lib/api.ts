@@ -92,10 +92,20 @@ export async function apiFetch<T = unknown>(
     };
   }
 
+  // 토큰 재발급이 필요없는 인증 엔드포인트 목록
+  const authEndpoints = [
+    "/api/auth/sign-in",
+    "/api/auth/sign-up",
+    "/api/auth/reissue",
+  ];
+  const shouldSkipRefresh = authEndpoints.some((path) =>
+    endpoint.includes(path),
+  );
+
   try {
     const response = await fetch(url, config);
 
-    if (response.status === 401) {
+    if (response.status === 401 && !shouldSkipRefresh) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           // [수정] newToken이 null일 수 있음을 처리
