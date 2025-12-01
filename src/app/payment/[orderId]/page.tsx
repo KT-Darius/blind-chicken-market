@@ -3,11 +3,13 @@
 import type React from "react";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import AddressSearch from "@/components/payment/AddressSearch";
-import mockData from "@/mocks/products.json";
 import { formatCurrency } from "@/lib/utils";
 import { apiGet, apiPatch } from "@/lib/api";
+import { useAuth } from "@/hooks/user/useAuth";
 import type { OrderDetail, UpdateShippingInfoRequest } from "@/types";
 
 // 토스페이먼츠 SDK 타입 정의
@@ -44,6 +46,8 @@ export default function CheckoutPage({
 }: {
   params: Promise<{ orderId: string }> | { orderId: string };
 }) {
+  const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const [winningProduct, setWinningProduct] = useState({
     id: 1,
     title: "아이폰17 프로 맥스 256GB (미개봉)",
@@ -65,6 +69,7 @@ export default function CheckoutPage({
   const [orderId, setOrderId] = useState<number>(0);
   const [widgetReady, setWidgetReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(true);
   const widgetsRef = useRef<TossPaymentsWidgets | null>(null);
   const paymentMethodWidgetRef = useRef<{
     destroy?: () => void;
@@ -74,11 +79,22 @@ export default function CheckoutPage({
   // params 초기화 및 상품 데이터 로드
   useEffect(() => {
     const initializeParams = async () => {
+      // 인증 로딩 중이면 대기
+      if (authLoading) return;
+
+      // 로그인하지 않은 경우 로그인 페이지로 리다이렉트
+      if (!user) {
+        alert("로그인이 필요한 서비스입니다.");
+        router.push("/login");
+        return;
+      }
+
       const resolvedParams = await Promise.resolve(params);
       const id = parseInt(resolvedParams.orderId, 10);
       setOrderId(id);
 
       try {
+        setIsLoading(true);
         // API 호출로 주문 정보 가져오기
         const orderData = await apiGet<OrderDetail>(`/api/orders/${id}`);
 
@@ -104,34 +120,25 @@ export default function CheckoutPage({
         }
       } catch (error) {
         console.error("주문 정보 조회 실패:", error);
-        // 에러 발생 시 mock 데이터 사용
-        const product = (
-          mockData as unknown as Array<{
-            id: number;
-            name: string;
-            bidPrice: number;
-            imageUrl: string;
-            user: { nickname: string };
-          }>
-        ).find((p) => p.id === id);
-
-        if (product) {
-          setWinningProduct({
-            id: product.id,
-            title: product.name,
-            image: product.imageUrl,
-            winningBid: product.bidPrice,
-            seller: product.user.nickname,
-            estimatedDelivery: "3-5 영업일",
-          });
+        // 권한 없음 또는 존재하지 않는 주문일 경우
+        if (error instanceof Error && 
+            (error.message.includes("403") || 
+             error.message.includes("404") ||
+             error.message.includes("권한") ||
+             error.message.includes("엔티티를 찾을 수 없습니다"))) {
+          alert("접근 권한이 없거나 존재하지 않는 주문입니다.");
+          router.push("/");
+          return;
         }
+      } finally {
+        setIsLoading(false);
       }
     };
     initializeParams();
-  }, [params]);
+  }, [params, authLoading, user, router]);
 
   const shippingFee = 3000;
-  const tax = Math.floor((winningProduct.winningBid * 0.1) / 100) * 100;
+  const tax = Math.floor(winningProduct.winningBid * 0.1);
   const totalAmount = winningProduct.winningBid + shippingFee + tax;
 
   // 토스페이먼츠 결제위젯 초기화 (한 번만 실행)
@@ -287,8 +294,8 @@ export default function CheckoutPage({
       await widgetsRef.current.requestPayment({
         orderId: `ORDER_${orderId}_${Date.now()}`,
         orderName: winningProduct.title,
-        successUrl: `${window.location.origin}/payment/success?orderId=${orderId}`,
-        failUrl: `${window.location.origin}/payment/fail?orderId=${orderId}`,
+        successUrl: `${window.location.origin}/payment/success?myOrderId=${orderId}&amount=${totalAmount}`,
+        failUrl: `${window.location.origin}/payment/fail?myOrderId=${orderId}`,
         customerEmail: "customer@example.com",
         customerName: deliveryInfo.name,
         customerMobilePhone: deliveryInfo.phone.replace(/-/g, ""),
@@ -319,7 +326,60 @@ export default function CheckoutPage({
 
         <h1 className="text-foreground mb-12 text-4xl font-bold">주문 결제</h1>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        {isLoading ? (
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+            {/* Main Content Skeleton */}
+            <div className="space-y-8 lg:col-span-2">
+              <div className="bg-card border-border space-y-6 rounded-lg border p-6">
+                <Skeleton className="h-8 w-32" />
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-10 flex-1" />
+                    <Skeleton className="h-10 w-20" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </div>
+              <div className="bg-card border-border space-y-6 rounded-lg border p-6">
+                <Skeleton className="h-8 w-32" />
+                <Skeleton className="h-40 w-full" />
+                <Skeleton className="h-40 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            </div>
+            {/* Sidebar Skeleton */}
+            <div className="lg:col-span-1">
+              <div className="bg-card border-border sticky top-24 space-y-6 rounded-lg border p-6">
+                <Skeleton className="h-6 w-24" />
+                <Skeleton className="aspect-square w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-3 w-20" />
+                <div className="space-y-3 pt-4">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                </div>
+                <Skeleton className="h-8 w-full" />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           {/* Main Content */}
           <div className="space-y-8 lg:col-span-2">
             <div className="bg-card border-border space-y-6 rounded-lg border p-6">
@@ -505,6 +565,7 @@ export default function CheckoutPage({
             </div>
           </div>
         </div>
+        )}
       </div>
     </main>
   );

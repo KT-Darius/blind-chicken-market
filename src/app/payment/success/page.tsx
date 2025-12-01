@@ -1,23 +1,47 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Check } from "lucide-react";
 import { apiGet } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
+import { useAuth } from "@/hooks/user/useAuth";
 import type { OrderDetail } from "@/types";
 
 function SuccessContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const orderId = searchParams.get("orderId");
+  const { user, isLoading: authLoading } = useAuth();
+  const orderId = searchParams.get("myOrderId");
+  const amount = searchParams.get("amount");
+  const tossOrderId = searchParams.get("orderId"); // 토스페이먼츠에서 보내주는 주문번호
+  const paymentKey = searchParams.get("paymentKey"); // 토스페이먼츠 결제 키 (정상 결제 확인용)
 
   const [orderData, setOrderData] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchOrderData = async () => {
+      // 인증 로딩 중이면 대기
+      if (authLoading) return;
+
+      // 로그인하지 않은 경우 로그인 페이지로 리다이렉트
+      if (!user) {
+        alert("로그인이 필요한 서비스입니다.");
+        router.push("/login");
+        return;
+      }
+
+      // paymentKey가 없으면 직접 URL 접근으로 간주
+      if (!paymentKey) {
+        alert("잘못된 접근입니다.");
+        router.push("/");
+        return;
+      }
+
       if (!orderId) {
         setLoading(false);
         return;
@@ -28,13 +52,23 @@ function SuccessContent() {
         setOrderData(data);
       } catch (error) {
         console.error("주문 정보 조회 실패:", error);
+        // 권한 없음 또는 존재하지 않는 주문일 경우
+        if (error instanceof Error && 
+            (error.message.includes("403") || 
+             error.message.includes("404") ||
+             error.message.includes("권한") ||
+             error.message.includes("엔티티를 찾을 수 없습니다"))) {
+          alert("접근 권한이 없거나 존재하지 않는 주문입니다.");
+          router.push("/");
+          return;
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchOrderData();
-  }, [orderId]);
+  }, [orderId, authLoading, user, router, paymentKey]);
 
   const orderDate = new Date().toLocaleDateString("ko-KR");
 
@@ -59,17 +93,36 @@ function SuccessContent() {
 
           {/* Order Details */}
           {loading ? (
-            <div className="bg-muted space-y-4 rounded-lg p-6 text-center">
-              <p className="text-muted-foreground">
-                주문 정보를 불러오는 중...
-              </p>
+            <div className="bg-muted space-y-4 rounded-lg p-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-border pb-4">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-5 w-32" />
+                </div>
+                <div className="flex items-center justify-between border-b border-border pb-4">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-5 w-48" />
+                </div>
+                <div className="flex items-center justify-between border-b border-border pb-4">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-5 w-32" />
+                </div>
+                <div className="flex items-center justify-between border-b border-border pb-4">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-6 w-40" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-5 w-24" />
+                </div>
+              </div>
             </div>
           ) : orderData ? (
             <div className="bg-muted space-y-4 rounded-lg p-6 text-left">
               <div className="border-border flex items-center justify-between border-b pb-4">
                 <span className="text-muted-foreground">주문번호</span>
                 <span className="text-foreground font-semibold">
-                  {orderData.orderId}
+                  {tossOrderId || orderId || orderData.orderId}
                 </span>
               </div>
               <div className="border-border flex items-center justify-between border-b pb-4">
@@ -87,7 +140,7 @@ function SuccessContent() {
               <div className="border-border flex items-center justify-between border-b pb-4">
                 <span className="text-muted-foreground">결제금액</span>
                 <span className="text-foreground text-lg font-semibold">
-                  {formatCurrency(orderData.bidPrice)}
+                  {amount ? formatCurrency(Number(amount)) : formatCurrency(orderData.bidPrice)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
