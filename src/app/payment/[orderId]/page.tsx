@@ -8,6 +8,8 @@ import AddressSearch from "@/components/payment/AddressSearch";
 import { Check, AlertCircle } from "lucide-react";
 import mockData from "@/mocks/products.json";
 import { formatCurrency } from "@/lib/utils";
+import { apiGet, apiPatch } from "@/lib/api";
+import type { OrderDetail, UpdateShippingInfoRequest } from "@/types";
 
 export default function CheckoutPage({
   params,
@@ -22,36 +24,6 @@ export default function CheckoutPage({
     seller: "테크마니아",
     estimatedDelivery: "3-5 영업일",
   });
-
-  // params 초기화 및 상품 데이터 로드
-  useEffect(() => {
-    const initializeParams = async () => {
-      const resolvedParams = await Promise.resolve(params);
-      const id = parseInt(resolvedParams.orderId, 10);
-
-      // mock 데이터에서 상품 찾기
-      const product = (
-        mockData as unknown as Array<{
-          id: number;
-          name: string;
-          bidPrice: number;
-          imageUrl: string;
-          user: { nickname: string };
-        }>
-      ).find((p) => p.id === id);
-      if (product) {
-        setWinningProduct({
-          id: product.id,
-          title: product.name,
-          image: product.imageUrl,
-          winningBid: product.bidPrice,
-          seller: product.user.nickname,
-          estimatedDelivery: "3-5 영업일",
-        });
-      }
-    };
-    initializeParams();
-  }, [params]);
 
   const [deliveryInfo, setDeliveryInfo] = useState({
     name: "",
@@ -71,6 +43,65 @@ export default function CheckoutPage({
   const [orderComplete, setOrderComplete] = useState<boolean>(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isOpen, setIsOpen] = useState(false);
+  const [orderId, setOrderId] = useState<number>(0);
+
+  // params 초기화 및 상품 데이터 로드
+  useEffect(() => {
+    const initializeParams = async () => {
+      const resolvedParams = await Promise.resolve(params);
+      const id = parseInt(resolvedParams.orderId, 10);
+      setOrderId(id);
+
+      try {
+        // API 호출로 주문 정보 가져오기
+        const orderData = await apiGet<OrderDetail>(`/api/orders/${id}`);
+
+        setWinningProduct({
+          id: orderData.orderId,
+          title: orderData.productName,
+          image: "/product01.jpeg", // imageUrl이 필요하면 OrderDetail 타입에 추가 필요
+          winningBid: orderData.bidPrice,
+          seller: "테크마니아", // seller 정보가 필요하면 OrderDetail 타입에 추가 필요
+          estimatedDelivery: "3-5 영업일",
+        });
+
+        // 배송 정보가 있으면 미리 채워넣기
+        if (orderData.shippingInfo) {
+          setDeliveryInfo({
+            name: orderData.shippingInfo.name,
+            phone: orderData.shippingInfo.phoneNumber,
+            address: orderData.shippingInfo.address,
+            detailAddress: orderData.shippingInfo.detailAddress,
+            postalCode: orderData.shippingInfo.zipCode,
+          });
+        }
+      } catch (error) {
+        console.error("주문 정보 조회 실패:", error);
+        // 에러 발생 시 mock 데이터 사용
+        const product = (
+          mockData as unknown as Array<{
+            id: number;
+            name: string;
+            bidPrice: number;
+            imageUrl: string;
+            user: { nickname: string };
+          }>
+        ).find((p) => p.id === id);
+
+        if (product) {
+          setWinningProduct({
+            id: product.id,
+            title: product.name,
+            image: product.imageUrl,
+            winningBid: product.bidPrice,
+            seller: product.user.nickname,
+            estimatedDelivery: "3-5 영업일",
+          });
+        }
+      }
+    };
+    initializeParams();
+  }, [params]);
 
   const shippingFee = 3000;
   const tax = Math.floor((winningProduct.winningBid * 0.1) / 100) * 100;
@@ -132,9 +163,34 @@ export default function CheckoutPage({
     }
 
     setIsProcessing(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setOrderComplete(true);
-    setIsProcessing(false);
+
+    try {
+      // 배송 정보 업데이트 API 호출
+      const shippingData: UpdateShippingInfoRequest = {
+        name: deliveryInfo.name,
+        phoneNumber: deliveryInfo.phone,
+        zipCode: deliveryInfo.postalCode,
+        address: deliveryInfo.address,
+        detailAddress: deliveryInfo.detailAddress,
+      };
+
+      await apiPatch<OrderDetail>(
+        `/api/orders/${orderId}/shipping-info`,
+        shippingData,
+      );
+
+      // 실제로는 결제 API도 호출해야 함
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      setOrderComplete(true);
+    } catch (error) {
+      console.error("주문 처리 실패:", error);
+      setErrors((prev) => ({
+        ...prev,
+        submit: "주문 처리에 실패했습니다. 다시 시도해주세요.",
+      }));
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (orderComplete) {
