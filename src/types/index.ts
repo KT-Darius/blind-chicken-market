@@ -184,5 +184,13 @@ export interface OrderDetail {
   productName: string;
   bidPrice: number;
   orderStatus: OrderStatus;
-  shippingInfo: ShippingInfo;
+  shippingInfo: ShippingInfo | null;
+  product: {
+    id: number;
+    name: string;
+    imageUrl: string;
+    user: {
+      nickname: string;
+    };
+  };
 }

@@ -3,9 +3,10 @@
 import type React from "react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import AddressSearch from "@/components/payment/AddressSearch";
-import { Check, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import mockData from "@/mocks/products.json";
 import { formatCurrency } from "@/lib/utils";
 import { apiGet, apiPatch } from "@/lib/api";
@@ -16,6 +17,7 @@ export default function CheckoutPage({
 }: {
   params: Promise<{ orderId: string }> | { orderId: string };
 }) {
+  const router = useRouter();
   const [winningProduct, setWinningProduct] = useState({
     id: 1,
     title: "아이폰17 프로 맥스 256GB (미개봉)",
@@ -40,7 +42,6 @@ export default function CheckoutPage({
   });
   const [agreeTerms, setAgreeTerms] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [orderComplete, setOrderComplete] = useState<boolean>(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isOpen, setIsOpen] = useState(false);
   const [orderId, setOrderId] = useState<number>(0);
@@ -56,12 +57,13 @@ export default function CheckoutPage({
         // API 호출로 주문 정보 가져오기
         const orderData = await apiGet<OrderDetail>(`/api/orders/${id}`);
 
+        // API 응답에서 필요한 정보만 추출
         setWinningProduct({
-          id: orderData.orderId,
-          title: orderData.productName,
-          image: "/product01.jpeg", // imageUrl이 필요하면 OrderDetail 타입에 추가 필요
+          id: orderData.product.id,
+          title: orderData.product.name,
+          image: orderData.product.imageUrl,
           winningBid: orderData.bidPrice,
-          seller: "테크마니아", // seller 정보가 필요하면 OrderDetail 타입에 추가 필요
+          seller: orderData.product.user.nickname,
           estimatedDelivery: "3-5 영업일",
         });
 
@@ -130,7 +132,39 @@ export default function CheckoutPage({
 
   const handleCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setCardInfo((prev) => ({ ...prev, [name]: value }));
+    let formattedValue = value;
+
+    if (name === "cardNumber") {
+      // 숫자만 추출
+      const numbers = value.replace(/\D/g, "");
+      // 16자리로 제한
+      const limitedNumbers = numbers.slice(0, 16);
+      // 4자리마다 하이픈 추가
+      formattedValue = limitedNumbers
+        .replace(/(\d{4})(?=\d)/g, "$1-")
+        .slice(0, 19);
+    } else if (name === "expiry") {
+      // 숫자만 추출
+      const numbers = value.replace(/\D/g, "");
+      // 4자리로 제한 (MMYY)
+      const limitedNumbers = numbers.slice(0, 4);
+      // MM/YY 형식으로 포맷팅
+      if (limitedNumbers.length >= 2) {
+        formattedValue = `${limitedNumbers.slice(0, 2)}/${limitedNumbers.slice(2)}`;
+      } else {
+        formattedValue = limitedNumbers;
+      }
+    } else if (name === "cvc") {
+      // 숫자만 추출하고 3자리로 제한
+      formattedValue = value.replace(/\D/g, "").slice(0, 3);
+    }
+
+    setCardInfo((prev) => ({ ...prev, [name]: formattedValue }));
+
+    // 에러 메시지 제거
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const validateForm = () => {
@@ -145,10 +179,48 @@ export default function CheckoutPage({
       newErrors.postalCode = "우편번호를 입력해주세요";
 
     if (paymentMethod === "card") {
-      if (!cardInfo.cardNumber.trim())
+      // 카드번호 검증
+      if (!cardInfo.cardNumber.trim()) {
         newErrors.cardNumber = "카드번호를 입력해주세요";
-      if (!cardInfo.expiry.trim()) newErrors.expiry = "만료일을 입력해주세요";
-      if (!cardInfo.cvc.trim()) newErrors.cvc = "CVC를 입력해주세요";
+      } else {
+        const cardNumberDigits = cardInfo.cardNumber.replace(/\D/g, "");
+        if (cardNumberDigits.length !== 16) {
+          newErrors.cardNumber = "카드번호는 16자리여야 합니다";
+        } else if (!/^\d+$/.test(cardNumberDigits)) {
+          newErrors.cardNumber = "올바른 카드번호 형식이 아닙니다";
+        }
+      }
+
+      // 만료일 검증
+      if (!cardInfo.expiry.trim()) {
+        newErrors.expiry = "만료일을 입력해주세요";
+      } else {
+        const expiryMatch = cardInfo.expiry.match(/^(\d{2})\/(\d{2})$/);
+        if (!expiryMatch) {
+          newErrors.expiry = "만료일은 MM/YY 형식이어야 합니다";
+        } else {
+          const month = parseInt(expiryMatch[1], 10);
+          const year = parseInt(expiryMatch[2], 10);
+          const currentYear = new Date().getFullYear() % 100;
+          const currentMonth = new Date().getMonth() + 1;
+
+          if (month < 1 || month > 12) {
+            newErrors.expiry = "월은 01~12 사이여야 합니다";
+          } else if (
+            year < currentYear ||
+            (year === currentYear && month < currentMonth)
+          ) {
+            newErrors.expiry = "만료된 카드입니다";
+          }
+        }
+      }
+
+      // CVC 검증
+      if (!cardInfo.cvc.trim()) {
+        newErrors.cvc = "CVC를 입력해주세요";
+      } else if (!/^\d{3}$/.test(cardInfo.cvc)) {
+        newErrors.cvc = "CVC는 3자리 숫자여야 합니다";
+      }
     }
 
     if (!agreeTerms) newErrors.terms = "약관 동의는 필수입니다";
@@ -181,59 +253,17 @@ export default function CheckoutPage({
 
       // 실제로는 결제 API도 호출해야 함
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      setOrderComplete(true);
+
+      // 성공 페이지로 리다이렉트 (orderId 전달)
+      router.push(`/payment/success?orderId=${orderId}`);
     } catch (error) {
       console.error("주문 처리 실패:", error);
-      setErrors((prev) => ({
-        ...prev,
-        submit: "주문 처리에 실패했습니다. 다시 시도해주세요.",
-      }));
+      // 실패 페이지로 리다이렉트
+      router.push("/payment/fail");
     } finally {
       setIsProcessing(false);
     }
   };
-
-  if (orderComplete) {
-    return (
-      <main className="bg-background min-h-screen py-12">
-        <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-          <div className="bg-card border-border space-y-6 rounded-lg border p-12 text-center">
-            <div className="mb-6 flex justify-center">
-              <div className="bg-primary/10 rounded-full p-4">
-                <Check className="text-primary h-12 w-12" />
-              </div>
-            </div>
-            <h1 className="text-foreground text-3xl font-bold">
-              주문이 완료되었습니다!
-            </h1>
-            <p className="text-muted-foreground">
-              감사합니다. 주문 번호는{" "}
-              <span className="text-foreground font-semibold">
-                BCM-2024-001
-              </span>
-              입니다.
-            </p>
-            <p className="text-muted-foreground text-sm">
-              예상 배송일:{" "}
-              <span className="text-foreground font-medium">
-                {winningProduct.estimatedDelivery}
-              </span>
-            </p>
-            <div className="flex justify-center gap-3 pt-6">
-              <Link href="/">
-                <Button variant="outline" className="rounded-lg bg-transparent">
-                  홈으로
-                </Button>
-              </Link>
-              <Link href="/profile">
-                <Button className="rounded-lg">주문 조회</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </main>
-    );
-  }
 
   return (
     <main className="bg-background min-h-screen py-8 md:py-12">
@@ -245,10 +275,10 @@ export default function CheckoutPage({
       )}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Link
-          href="/product/1"
+          href="/mypage"
           className="text-muted-foreground hover:text-foreground mb-8 inline-flex items-center gap-2 text-sm transition-colors"
         >
-          ← 뒤로 가기
+          ← 마이페이지로 가기
         </Link>
 
         <h1 className="text-foreground mb-12 text-4xl font-bold">주문 결제</h1>
@@ -370,7 +400,11 @@ export default function CheckoutPage({
                 {[
                   { id: "card", label: "신용카드" },
                   { id: "bank", label: "무통장입금" },
-                  { id: "toss", label: "토스페이" },
+                  {
+                    id: "toss",
+                    label: "토스페이",
+                    icon: "https://static.toss.im/icons/png/4x/icon-toss-logo.png",
+                  },
                 ].map((method) => (
                   <label
                     key={method.id}
@@ -384,7 +418,16 @@ export default function CheckoutPage({
                       onChange={(e) => setPaymentMethod(e.target.value)}
                       className="h-4 w-4"
                     />
-                    <span className="text-foreground ml-3 font-medium">
+                    {method.id === "toss" ? (
+                      <img
+                        src={method.icon}
+                        alt="토스페이"
+                        className="ml-3 h-6 w-6"
+                      />
+                    ) : (
+                      <span className="ml-3 text-xl">{method.icon}</span>
+                    )}
+                    <span className="text-foreground ml-2 font-medium">
                       {method.label}
                     </span>
                   </label>
