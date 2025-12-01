@@ -15,6 +15,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
+      <head>
+        <script src="https://js.tosspayments.com/v2/standard"></script>
+      </head>
       <body>
         <AuthProvider>
           <Navigation />
