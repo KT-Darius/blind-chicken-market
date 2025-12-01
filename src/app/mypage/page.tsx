@@ -248,7 +248,7 @@ export default function MyPage() {
       // 2. 판매 대기 (낙찰됨) - 모두 대기로 분류
       const pending = sellingProducts.filter((p) => p.bidStatus === "COMPLETED");
 
-      // 3. 판매 완료 (결제됨) - 현재 구분 불가
+      // 3. 판매 완료 (결제됨)
       const completed: Product[] = [];
 
       return {
@@ -271,21 +271,19 @@ export default function MyPage() {
   const getStatClass = (count: number, isPrimary: boolean = false, isTitle: boolean) => {
     const isBold = count > 0;
     
-    // 타이틀 (예: '전체', '입찰 중')
+    // 타이틀
     if (isTitle) {
       if (isBold) {
-        // 1 이상: primary(결제대기) 또는 foreground(나머지)로 강조
         return isPrimary ? "text-primary font-bold" : "text-foreground font-bold";
       } else {
-        return "text-muted-foreground"; // 0일 때 연하게
+        return "text-muted-foreground";
       }
     } 
     
-    // 숫자 카운트 (예: '3', '0')
     if (isBold) {
       return isPrimary ? "text-primary mt-1 text-xl font-bold" : "text-foreground mt-1 text-xl font-semibold";
     } else {
-      return "text-muted-foreground mt-1 text-xl font-semibold"; // 0일 때 연하게
+      return "text-muted-foreground mt-1 text-xl font-semibold";
     }
   };
 
@@ -374,7 +372,7 @@ export default function MyPage() {
                 <p className={getStatClass(purchaseBidding.length + purchasePending.length + purchaseCompleted.length, false, true)}>전체</p>
                 <p className={getStatClass(purchaseBidding.length + purchasePending.length + purchaseCompleted.length, false, false)}>
                   {/* 전체 수량 합산 */}
-                  {purchaseBidding.length + purchasePending.length + purchaseCompleted.length}
+                  {purchaseBidding.length + orders.filter(order => order.orderStatus === "PAYMENT_PENDING").length + purchaseCompleted.length}
                 </p>
               </div>
               
@@ -388,7 +386,6 @@ export default function MyPage() {
 
               {/* 3. 결제 대기 (강조 제거 및 구분선 제거) */}
               <div> 
-                {/* 강조 스타일 제거, 기본 스타일 적용 */}
                 <p className={getStatClass(orders.filter(order => order.orderStatus === "PAYMENT_PENDING").length, true, true)}>결제 대기</p> 
                 <p className={getStatClass(orders.filter(order => order.orderStatus === "PAYMENT_PENDING").length, true, false)}>
                   {orders.filter(order => order.orderStatus === "PAYMENT_PENDING").length}
@@ -429,38 +426,49 @@ export default function MyPage() {
             </div>
           </div>
 
-                    {/* 3 . 결제 대기 목록 (버튼 있음) */}
-          {purchasePending.length > 0 && (
-            <div className="mb-8">
-                <h3 className="text-primary mb-3 text-sm font-bold flex items-center gap-2">
-                  결제 대기
-                </h3>
-                {/* 배경색 조건부 변경 */}
-                <div className={`rounded-lg border ${
-                    purchasePending.length > 0 ? "border-primary/20 bg-primary/5" : "border-border bg-card"
-                }`}>
-                    {orders
-                    .filter(order => order.orderStatus === "PAYMENT_PENDING")
-                    .map((order) => (
-                        <ProductListItem
-                            key={order.orderId}
-                            id={order.orderId}
-                            name={order.productName}
-                            price={order.bidPrice}
-                            subText="낙찰 성공! 결제가 필요합니다"
-                            actionNode={
-                                <Button 
-                                    size="sm" 
-                                    onClick={() => handlePayment(order.orderId, order.productName)}
-                                >
-                                    결제하기
-                                </Button>
-                            }
-                        />
-                    ))}
+          {/* 3. 결제 대기 목록 */}
+          <div className="mb-8">
+            <h3 className="text-primary mb-3 text-sm font-bold flex items-center gap-2">
+              결제 대기
+            </h3>
+            <div
+              className={`rounded-lg border ${
+                orders.filter(order => order.orderStatus === "PAYMENT_PENDING").length > 0
+                  ? "border-primary/20 bg-primary/5"
+                  : "border-border bg-card"
+              }`}
+            >
+              {orders.filter(order => order.orderStatus === "PAYMENT_PENDING").length === 0 ? (
+                <div className="py-8 text-center">
+                  <p className="text-muted-foreground text-sm">
+                    결제 대기 중인 상품이 없습니다.
+                  </p>
                 </div>
+              ) : (
+                orders
+                  .filter(order => order.orderStatus === "PAYMENT_PENDING")
+                  .map(order => (
+                    <ProductListItem
+                      key={order.orderId}
+                      id={order.orderId}
+                      name={order.productName}
+                      price={order.bidPrice}
+                      subText="낙찰 성공! 결제가 필요합니다."
+                      actionNode={
+                        <Button
+                          size="sm"
+                          onClick={() =>
+                            handlePayment(order.orderId, order.productName)
+                          }
+                        >
+                          결제하기
+                        </Button>
+                      }
+                    />
+                  ))
+              )}
             </div>
-          )}
+          </div>
 
           {/* 4. 구매 완료 목록 */}
           <div>
@@ -497,7 +505,7 @@ export default function MyPage() {
 
           {/* 1. 요약 바 */}
           <div className="border-border bg-card mb-6 rounded-lg border p-4">
-            <div className="grid grid-cols-4 text-center text-sm"> {/* grid-cols-4로 변경 */}
+            <div className="grid grid-cols-4 text-center text-sm">
               
               {/* 1. 전체 (NEW - 우측에 구분선 유지) */}
               <div className="border-border border-r">
@@ -562,13 +570,11 @@ export default function MyPage() {
 
           {/* 3. 판매 대기 목록 (강조 스타일 적용) */}
           <div className="mb-6">
-            {/* H3 텍스트 색상 조건부 변경 */}
             <h3 className={`mb-3 text-sm font-medium flex items-center gap-2 ${
                 sellingPending.length > 0 ? "text-primary font-bold" : "text-muted-foreground"
             }`}>
               입금 대기
             </h3>
-            {/* DIV 배경색 조건부 변경 */}
             <div className={`rounded-lg border ${
               sellingPending.length > 0
                 ? "border-primary/20 bg-primary/5" 

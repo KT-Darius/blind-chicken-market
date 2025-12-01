@@ -158,7 +158,12 @@ export type Order = {
   orderId: number;
   productName: string;
   bidPrice: number;
-  orderStatus: OrderStatus;
+  orderStatus: OrderStatus2;
 };
 
 export type OrderStatus = "PAYMENT_PENDING" | "PAID";
+
+enum OrderStatus2 {
+  PAYMENT_PENDING = 'PAYMENT_PENDING',
+  PAID = 'PAID',
+}
